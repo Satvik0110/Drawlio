@@ -19,7 +19,7 @@ io.on('connection', (socket)    => {
     });
     socket.on('clientMessage', (data) => {
       console.log(`Received from client:${data.text}, ${data.x}, ${data.y}`);
-      io.emit('serverMessage', {text: 'Hi client!', x:data.x, y:data.y});
+      socket.broadcast.emit('serverMessage', {text: 'Hi client!', x:data.x, y:data.y});
     });
 });
 

@@ -21,15 +21,12 @@ const SocketProvider = ({children}) => {
           setConnected(false);
           navigate('/');
         });
-        socket.on('serverMessage', (data) => {
-          console.log(`Server says: ${data.text}, ${data.x}, ${data.y}`);
-        });
+        
     
         //cleanup
         return () => {
           socket.off('connect');
           socket.off('disconnect');
-          socket.off('serverMessage');
         };
       });
   return (
