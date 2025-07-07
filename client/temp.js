@@ -2,7 +2,7 @@
 //shift nodemon to dev dependency
 //room in sockets....
 //handle conect, disconnect
-
+//https://github.com/RecursionGroupQ/MindJam?tab=readme-ov-file
 // Send to server from client	socket.emit(...) (on client)
 // Send to sender client only	socket.emit(...) (on server)
 // Send to all clients	io.emit(...)

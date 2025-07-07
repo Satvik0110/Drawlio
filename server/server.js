@@ -28,6 +28,10 @@ io.on('connection', (socket)    => {
       console.log(`Received from client:${data.text}, ${data.x}, ${data.y}`);
       socket.broadcast.emit('serverMessage', {text: 'Hi client!', x:data.x, y:data.y});
     });
+    socket.on('drawing', (data)=>{
+        socket.broadcast.emit('draww', data);
+    });
+
     socket.on('choice', (data)=>{
         console.log(`Received choice from ${socket.id}: ${data.choice}`);
         choices[socket.id]=data.choice;
