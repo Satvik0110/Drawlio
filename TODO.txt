@@ -1,0 +1,16 @@
+A. Common Things
+1. make Rooms
+2. styling, UI
+3. broadcast/chatbox
+
+B. utilities
+1. collaborative code editor
+2. Whiteboard[some shapes,text,lines feature and all too for flowcharts]
+3.
+
+A. GAMES
+1. Fix broadcasting drawing
+2. make it one at a time (like skribbl type where other guesses/chatbox)
+3.Tictactoe/rock paper
+
+// if disconnects and cinnects again then dikhna chahiye whats already drawn

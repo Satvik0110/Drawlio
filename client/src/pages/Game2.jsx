@@ -8,13 +8,21 @@ export default function DrawingCanvas() {
   const [tool, setTool] = useState('brush'); // or 'eraser'
   const isDrawing = useRef(false);
   useEffect(()=>{
-    if(connected){
+    socket.emit('get-initial-lines');
+    socket.on('initial-lines', (lines)=>{
+      setLines(lines);
+    });
         socket.on('draww', (data) => {
             setLines(prevLines => [...prevLines, data.lastLine]);
           });
-    }
+        socket.on('clear',(data)=>{
+          setLines([]);
+        });
+    
     return ()=>{
       socket.off('draww');
+      socket.off('clear');
+      socket.off('initial-lines');
     };
   },[connected]);
 
@@ -52,6 +60,7 @@ export default function DrawingCanvas() {
 
   const handleClear = () => {
     setLines([]);
+    if (connected) socket.emit('clear', { array:[] });
   };
 
   return (

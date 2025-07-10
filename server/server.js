@@ -14,11 +14,15 @@ const io = require('socket.io')(server, {
 
 let players=[];
 let choices={};
+let lines=[];
 io.on('connection', (socket)    => {
     console.log(`${socket.id} user just connected!`);
     players.push(socket.id);
     console.log(players);
-    console.log(choices);
+    socket.on('get-initial-lines', (data)=>{
+        socket.emit('initial-lines', lines);
+    });
+   
     socket.on('disconnect', () => {
       console.log('A user disconnected');
       players = players.filter(id => id !== socket.id);
@@ -29,8 +33,13 @@ io.on('connection', (socket)    => {
       socket.broadcast.emit('serverMessage', {text: 'Hi client!', x:data.x, y:data.y});
     });
     socket.on('drawing', (data)=>{
+        lines.push(data.lastLine);
         socket.broadcast.emit('draww', data);
     });
+      socket.on('clear', (data)=>{
+        socket.broadcast.emit('clear', data);
+    });
+
 
     socket.on('choice', (data)=>{
         console.log(`Received choice from ${socket.id}: ${data.choice}`);
