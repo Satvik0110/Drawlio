@@ -12,62 +12,37 @@ const io = require('socket.io')(server, {
     }
 });
 
-let players=[];
-let choices={};
-let lines=[];
+let lines={};
 io.on('connection', (socket)    => {
-    console.log(`${socket.id} user just connected!`);
-    players.push(socket.id);
-    console.log(players);
-    socket.on('get-initial-lines', (data)=>{
-        socket.emit('initial-lines', lines);
+    console.log(`${socket.id} user just connected!`);   
+    socket.on('get-initial-lines', (roomID)=>{
+        if(!lines[roomID]) lines[roomID]=[];
+        socket.emit('initial-lines', lines[roomID]);
     });
+
+    socket.on('join-room', (roomId) => {
+        socket.join(roomId); // Also creates room if doesntt exist 
+        console.log(`${socket.id} joined room ${roomId}`);
+        socket.to(roomId).emit('user-joined', socket.id);
+  });
    
     socket.on('disconnect', () => {
       console.log('A user disconnected');
-      players = players.filter(id => id !== socket.id);
-      delete choices[socket.id];
     });
-    socket.on('clientMessage', (data) => {
-      console.log(`Received from client:${data.text}, ${data.x}, ${data.y}`);
-      socket.broadcast.emit('serverMessage', {text: 'Hi client!', x:data.x, y:data.y});
-    });
+   
+   
     socket.on('drawing', (data)=>{
-        lines.push(data.lastLine);
-        socket.broadcast.emit('draww', data);
+        const roomID=data.roomID;
+        lines[roomID].push(data.lastLine);
+        socket.to(roomID).emit('draww', data);
     });
+
       socket.on('clear', (data)=>{
-        socket.broadcast.emit('clear', data);
+        const roomID=data.roomID;
+        socket.to(roomID).emit('clear');
+        lines[roomID]=[];
     });
 
-
-    socket.on('choice', (data)=>{
-        console.log(`Received choice from ${socket.id}: ${data.choice}`);
-        choices[socket.id]=data.choice;
-        if(Object.keys(choices).length === 2){
-            const [p1, p2] = players;
-            const c1 = choices[p1];
-            const c2 = choices[p2];
-            p1result='';
-            p2result='';
-            if(c1==c2){
-                p1result='draw';
-                p2result='draw';
-            }
-            else if((c1=='paper' && c2=='rock') || (c1=='rock' && c2=='scissors') || (c1=='scissors' && c2=='paper')){
-                p1result=`YOU WON BUDDY!!`
-                p2result=`Oof you lost...`
-            } 
-            else{
-                p2result=`YOU WON BUDDY!!`
-                p1result=`Oof you lost...`
-            }
-            io.to(p1).emit('result',{you:choices[p1], they: choices[p2], result:p1result} )
-            io.to(p2).emit('result', {you:choices[p2], they: choices[p1], result:p2result});
-            choices={};
-        }
-
-    });
 });
 
 

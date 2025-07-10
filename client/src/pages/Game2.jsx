@@ -2,15 +2,19 @@ import { Stage, Layer, Line } from 'react-konva';
 import { useState, useRef, useContext, useEffect } from 'react';
 import { SocketContext } from '../SocketProvider';
 export default function DrawingCanvas() {
-  const {socket, connected} = useContext(SocketContext); 
+  const {socket, connected, roomID} = useContext(SocketContext); 
   const [lines, setLines] = useState([]);
   const [color, setColor] = useState('black');
   const [tool, setTool] = useState('brush'); // or 'eraser'
   const isDrawing = useRef(false);
   useEffect(()=>{
-    socket.emit('get-initial-lines');
+    socket.emit('join-room', roomID); 
+    socket.emit('get-initial-lines', roomID);
     socket.on('initial-lines', (lines)=>{
       setLines(lines);
+    });
+    socket.on('user-joined', (socketid)=>{
+      console.log(`${socketid} user joined the room!!`);
     });
         socket.on('draww', (data) => {
             setLines(prevLines => [...prevLines, data.lastLine]);
@@ -23,8 +27,9 @@ export default function DrawingCanvas() {
       socket.off('draww');
       socket.off('clear');
       socket.off('initial-lines');
+      socket.off('user-joined');
     };
-  },[connected]);
+  },[connected, roomID]);
 
   const handleMouseDown = (e) => {
     isDrawing.current = true;
@@ -50,7 +55,7 @@ export default function DrawingCanvas() {
   const updatedLines = [...lines.slice(0, -1), updatedLine];
   setLines(updatedLines);
 
-  if (connected) socket.emit('drawing', { lastLine: updatedLine });
+  if (connected) socket.emit('drawing', { lastLine: updatedLine, roomID });
   
 };
 
@@ -60,7 +65,7 @@ export default function DrawingCanvas() {
 
   const handleClear = () => {
     setLines([]);
-    if (connected) socket.emit('clear', { array:[] });
+    if (connected) socket.emit('clear', {roomID});
   };
 
   return (

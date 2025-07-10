@@ -13,4 +13,6 @@ A. GAMES
 2. make it one at a time (like skribbl type where other guesses/chatbox)
 3.Tictactoe/rock paper
 
-// if disconnects and cinnects again then dikhna chahiye whats already drawn
+ disconnect, if you're tracking users or rooms, consider cleaning up unused rooms if empty.
+
+You may later want to rate-limit drawing events to avoid excessive traffic from spamming.

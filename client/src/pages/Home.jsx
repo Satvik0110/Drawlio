@@ -4,17 +4,22 @@
     const Home = () => {
         const [ID, setID] = useState('');
     const [password, setPassword] = useState('');
-    const {socket, connected}= useContext(SocketContext);
-        const connectToSocket = () => {
-        if(!socket.connected) socket.connect();
-        
+    const {socket, connected, setroomID}= useContext(SocketContext);
+        const connectToSocket = (id) => {
+        if(!socket.connected){
+            socket.connect();
+            setroomID(id);
+        } 
     };
         const submitForm = (e)=>{
         e.preventDefault();
         if(password=="123" && ID=="abc"){
             console.log('Valid')
-            connectToSocket();
-        } 
+            connectToSocket('room123');
+        }else if(password=="234" && ID=="bcd"){
+             console.log('Valid')
+            connectToSocket('room234');  
+        }
         else console.log('Invalid creds');
     }
     return (
