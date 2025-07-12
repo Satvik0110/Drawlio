@@ -42,6 +42,10 @@ io.on('connection', (socket)    => {
         socket.to(roomID).emit('clear');
         lines[roomID]=[];
     });
+    socket.on('set-drawer', (data)=>{
+        const roomID=data.roomID;
+        socket.to(roomID).emit('set-guesser');
+    })
 
 });
 

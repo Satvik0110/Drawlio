@@ -6,6 +6,7 @@ export default function DrawingCanvas() {
   const [lines, setLines] = useState([]);
   const [color, setColor] = useState('black');
   const [tool, setTool] = useState('brush'); // or 'eraser'
+  const [isDrawer, setDrawer]= useState(false);
   const isDrawing = useRef(false);
   useEffect(()=>{
     socket.emit('join-room', roomID); 
@@ -22,16 +23,21 @@ export default function DrawingCanvas() {
         socket.on('clear',(data)=>{
           setLines([]);
         });
-    
+        socket.on('set-guesser', (data)=>{
+          setDrawer(false);
+        });
+           
     return ()=>{
       socket.off('draww');
       socket.off('clear');
       socket.off('initial-lines');
       socket.off('user-joined');
+      socket.off('set-guesser');
     };
   },[connected, roomID]);
 
   const handleMouseDown = (e) => {
+    if(!isDrawer) return;
     isDrawing.current = true;
     const pos = e.target.getStage().getPointerPosition();
     setLines([...lines, {
@@ -43,7 +49,7 @@ export default function DrawingCanvas() {
   };
 
  const handleMouseMove = (e) => {
-  if (!isDrawing.current) return;
+  if (!isDrawing.current || !isDrawer) return;
   const stage = e.target.getStage();
   const point = stage.getPointerPosition();
   const lastLine = lines[lines.length - 1];
@@ -68,10 +74,14 @@ export default function DrawingCanvas() {
     if (connected) socket.emit('clear', {roomID});
   };
 
+  const startDrawing= () =>{
+      setDrawer(true);
+      socket.emit('set-drawer', {roomID});
+  }
   return (
-    <div>
+     <div>
       {/* Controls */}
-      <div style={{ position: 'fixed', top: 10, left: 10, zIndex: 10 }}>
+      {isDrawer && <div style={{ position: 'fixed', top: 10, left: 10, zIndex: 10 }}>
         <button onClick={() => setTool('brush')}>Brush</button>
         <button onClick={() => setTool('eraser')}>Eraser</button>
         <input
@@ -81,7 +91,8 @@ export default function DrawingCanvas() {
           disabled={tool === 'eraser'}
         />
         <button onClick={handleClear}>Clear</button>
-      </div>
+      </div>}
+      <button onClick={startDrawing}>DRAW!!</button>
 
       {/* Canvas */}
       <Stage
