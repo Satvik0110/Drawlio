@@ -11,6 +11,7 @@ const SocketProvider = ({children}) => {
     const navigate= useNavigate();
     const [connected, setConnected]= useState(false);
     const [roomID, setroomID]= useState('');
+    const [name, setName]= useState('');
     useEffect(()=>{
         socket.on('connect', ()=>{
           console.log('Connected to server', socket.id);
@@ -31,7 +32,7 @@ const SocketProvider = ({children}) => {
         };
       });
   return (
-    <SocketContext.Provider value={{socket, connected, roomID, setroomID}} > 
+    <SocketContext.Provider value={{socket, connected, roomID, setroomID, name, setName}} > 
       {children}
     </SocketContext.Provider>
   )

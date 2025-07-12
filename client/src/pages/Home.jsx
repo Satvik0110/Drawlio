@@ -4,11 +4,13 @@
     const Home = () => {
         const [ID, setID] = useState('');
     const [password, setPassword] = useState('');
-    const {socket, connected, setroomID}= useContext(SocketContext);
+    const [username, setUsername]=useState('');
+    const {socket, setroomID, setName}= useContext(SocketContext);
         const connectToSocket = (id) => {
         if(!socket.connected){
             socket.connect();
             setroomID(id);
+            setName(username);
         } 
     };
         const submitForm = (e)=>{
@@ -27,6 +29,7 @@
             <form>
             <input placeholder='ID' onChange={(e)=>setID(e.target.value)}></input>
             <input placeholder='password' type='password' onChange={(e)=>setPassword(e.target.value)}></input>
+            <input placeholder='name' onChange={(e)=>setUsername(e.target.value)}></input>
             <button type="submit" onClick={submitForm}>Connect</button>
             </form>
             </>

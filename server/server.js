@@ -12,38 +12,53 @@ const io = require('socket.io')(server, {
     }
 });
 
-let lines={};
+let rooms={}
 io.on('connection', (socket)    => {
     console.log(`${socket.id} user just connected!`);   
-    socket.on('get-initial-lines', (roomID)=>{
-        if(!lines[roomID]) lines[roomID]=[];
-        socket.emit('initial-lines', lines[roomID]);
+    socket.on('join-room', (data) => {
+        const {roomID, name}= data;
+
+        if(!rooms[roomID]){
+            rooms[roomID]={
+                players:[],
+                lines:[],
+                drawerIndex:0,
+                host:socket.id,
+                round:1
+            };
+        }
+        socket.join(roomID); // Also creates room if doesntt exist 
+        rooms[roomID].players.push(socket.id); 
+        socket.roomID=roomID;
+        socket.name=name;
+        console.log(`${socket.name} joined room ${socket.roomID}`);
+        socket.to(socket.roomID).emit('user-joined', {name:socket.name, hostID: rooms[socket.roomID].host});
+  });
+
+
+    socket.on('get-initial-lines', ()=>{
+        socket.emit('initial-lines', rooms[socket.roomID].lines);
     });
 
-    socket.on('join-room', (roomId) => {
-        socket.join(roomId); // Also creates room if doesntt exist 
-        console.log(`${socket.id} joined room ${roomId}`);
-        socket.to(roomId).emit('user-joined', socket.id);
-  });
    
     socket.on('disconnect', () => {
-      console.log('A user disconnected');
+      console.log(`${socket.name} disconnected`);
     });
    
    
     socket.on('drawing', (data)=>{
-        const roomID=data.roomID;
-        lines[roomID].push(data.lastLine);
+        const roomID=socket.roomID;
+        rooms[roomID].lines.push(data.lastLine);
         socket.to(roomID).emit('draww', data);
     });
 
-      socket.on('clear', (data)=>{
-        const roomID=data.roomID;
+      socket.on('clear', ()=>{
+        const roomID=socket.roomID;
+        rooms[roomID].lines=[];
         socket.to(roomID).emit('clear');
-        lines[roomID]=[];
     });
-    socket.on('set-drawer', (data)=>{
-        const roomID=data.roomID;
+    socket.on('set-drawer', ()=>{
+        const roomID=socket.roomID;
         socket.to(roomID).emit('set-guesser');
     })
 

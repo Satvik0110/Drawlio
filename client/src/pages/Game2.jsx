@@ -2,28 +2,31 @@ import { Stage, Layer, Line } from 'react-konva';
 import { useState, useRef, useContext, useEffect } from 'react';
 import { SocketContext } from '../SocketProvider';
 export default function DrawingCanvas() {
-  const {socket, connected, roomID} = useContext(SocketContext); 
+  const {socket, connected, roomID, name} = useContext(SocketContext); 
   const [lines, setLines] = useState([]);
   const [color, setColor] = useState('black');
   const [tool, setTool] = useState('brush'); // or 'eraser'
   const [isDrawer, setDrawer]= useState(false);
+  const [isHost, setHost]=useState(false);
   const isDrawing = useRef(false);
   useEffect(()=>{
-    socket.emit('join-room', roomID); 
-    socket.emit('get-initial-lines', roomID);
+    socket.emit('join-room', {roomID, name}); 
+    socket.emit('get-initial-lines');
     socket.on('initial-lines', (lines)=>{
       setLines(lines);
     });
-    socket.on('user-joined', (socketid)=>{
-      console.log(`${socketid} user joined the room!!`);
+    socket.on('user-joined', (data)=>{
+      const {name,hostID}= data;
+      setHost(socket.id===hostID);
+      console.log(`${name} joined the room!!`);
     });
         socket.on('draww', (data) => {
             setLines(prevLines => [...prevLines, data.lastLine]);
           });
-        socket.on('clear',(data)=>{
+        socket.on('clear',()=>{
           setLines([]);
         });
-        socket.on('set-guesser', (data)=>{
+        socket.on('set-guesser', ()=>{
           setDrawer(false);
         });
            
@@ -80,8 +83,11 @@ export default function DrawingCanvas() {
   }
   return (
      <div>
-      {/* Controls */}
-      {isDrawer && <div style={{ position: 'fixed', top: 10, left: 10, zIndex: 10 }}>
+      <p>{`Hi ${name} `}</p>
+      {isHost && <p>YOU ARE THE HOST</p>}
+
+      {/* Controls */}  
+      {isDrawer && <div style={{ position: 'fixed', top: 30, left: 10, zIndex: 10 }}>
         <button onClick={() => setTool('brush')}>Brush</button>
         <button onClick={() => setTool('eraser')}>Eraser</button>
         <input
@@ -92,7 +98,7 @@ export default function DrawingCanvas() {
         />
         <button onClick={handleClear}>Clear</button>
       </div>}
-      <button onClick={startDrawing}>DRAW!!</button>
+      {!isDrawer && <button onClick={startDrawing}>DRAW!!</button>}
 
       {/* Canvas */}
       <Stage
