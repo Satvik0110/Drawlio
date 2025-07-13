@@ -1,16 +1,20 @@
-A. Common Things
-1. make Rooms
-2. styling, UI
-3. broadcast/chatbox
-
-
-1. generate unique room id, store in db?? [not current predefined ones]
+1. generate unique room id--------------------------------IN PROGRESS
 2. chatbox to guess
 3. styling, UI
-4.configurable number of rooms, players, drawing timer.
+4.configurable number of rooms, players, drawing timer. -----------IN PROGRESS
 5.handle proper auth for accessing /game.
 6.FORM VALIDATION
 7.shift join room to home.jsx instead of /game?
-8. duplicate users currently in rooms(due to strict mode--fix)
-9. word pool+ random 3 choices for user to pick
+8. duplicate users currently in rooms(due to strict mode--fix) --------DONE (OPTIMIZE?)
+9. word pool+ random 3 choices for user to pick ------------------IN PROGRESS
 10. optimizations like localstorage etc
+11. Refcator to classes, objects etc-------------------------------IN PROGRESS
+12. On finishing 1 gamne on starting
+13. winner, points
+[hints system, sounds, avatars, brush size]
+
+In order:
+1. words select, timer display on screen, word display on screen for guesser and drawer
+2. Generate unique room ID,Configurable no. of players, rounds, drawing timer..try to fix delay on pressing start
+3. modularize and refactor existing client side and server code.
+4. Chatbox, guess system
