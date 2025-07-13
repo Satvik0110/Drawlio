@@ -215,7 +215,6 @@ const words=[
 "plug",
 "pond",
 "pony",
-"poop",
 "poor",
 "pray",
 "rain",
@@ -1297,3 +1296,5 @@ const words=[
 "statue of liberty",
 "sydney opera house",
 ]
+
+module.exports= words;

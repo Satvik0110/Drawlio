@@ -33,12 +33,15 @@ io.on('connection', (socket)    => {
 //         if (!rooms[roomID].players.includes(socket.id)) {
 //   rooms[roomID].players.push(socket.id);
 // }
-        socket.join(roomID); // Also creates room if doesntt exist 
-        rooms[roomID].players.push(socket.id); 
-        socket.roomID=roomID;
-        socket.name=name;
-        console.log(`${socket.name} joined room ${socket.roomID}`);
-        io.to(socket.roomID).emit('user-joined', {name:socket.name, hostID: rooms[socket.roomID].host});
+if (!rooms[roomID].players.includes(socket.id)) {
+            socket.join(roomID); // Also creates room if doesntt exist 
+            rooms[roomID].players.push(socket.id);
+            socket.roomID=roomID;
+            socket.name=name;
+            console.log(`${socket.name} joined room ${socket.roomID}`);
+            io.to(socket.roomID).emit('user-joined', {name:socket.name, hostID: rooms[socket.roomID].host});
+        }
+        // rooms[roomID].players.push(socket.id); 
   });
 
 
@@ -68,7 +71,7 @@ io.on('connection', (socket)    => {
       socket.on('clear', ()=>{
         const roomID=socket.roomID;
         rooms[roomID].lines=[];
-        socket.to(roomID).emit('clear');
+        io.to(roomID).emit('clear');
     });
     socket.on('set-drawer', ()=>{
         const roomID=socket.roomID;
@@ -83,11 +86,14 @@ io.on('connection', (socket)    => {
         room.gameInterval= setInterval(()=>{
             if(room.drawerIndex>room.numRounds){
                 clearInterval(room.gameInterval);
+                room.round=0;
                 io.to(socket.roomID).emit('game-over');
                 return;
             }
             const currDrawer=room.drawerIndex% room.players.length;
             io.to(socket.roomID).emit('set-drawer', room.players[currDrawer]);
+            room.lines=[];
+            io.to(socket.roomID).emit('clear');
             console.log(`Now drawing: ${room.players[currDrawer]}`);
             room.round++;
             room.drawerIndex++;
