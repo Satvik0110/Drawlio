@@ -8,6 +8,7 @@ export default function DrawingCanvas() {
   const [tool, setTool] = useState('brush'); // or 'eraser'
   const [isDrawer, setDrawer]= useState(false);
   const [isHost, setHost]=useState(false);
+  const [showButton, setshowButton]=useState(true);
   const isDrawing = useRef(false);
   useEffect(()=>{
     socket.emit('join-room', {roomID, name}); 
@@ -26,16 +27,22 @@ export default function DrawingCanvas() {
         socket.on('clear',()=>{
           setLines([]);
         });
-        socket.on('set-guesser', ()=>{
-          setDrawer(false);
+        socket.on('set-drawer', (socketID)=>{
+          setDrawer(socket.id===socketID);
         });
+         socket.on('game-over', () => {
+            setLines([]);
+            setDrawer(false);
+            setshowButton(true);
+          });
            
     return ()=>{
       socket.off('draww');
       socket.off('clear');
       socket.off('initial-lines');
       socket.off('user-joined');
-      socket.off('set-guesser');
+      socket.off('set-drawer');
+      socket.off('game-over');
     };
   },[connected, roomID]);
 
@@ -77,14 +84,14 @@ export default function DrawingCanvas() {
     if (connected) socket.emit('clear', {roomID});
   };
 
-  const startDrawing= () =>{
-      setDrawer(true);
-      socket.emit('set-drawer', {roomID});
+  const startGame= () =>{
+      setshowButton(false);
+      socket.emit('start-game');
   }
   return (
      <div>
       <p>{`Hi ${name} `}</p>
-      {isHost && <p>YOU ARE THE HOST</p>}
+      {isHost && showButton && <button onClick={startGame}>START</button>}
 
       {/* Controls */}  
       {isDrawer && <div style={{ position: 'fixed', top: 30, left: 10, zIndex: 10 }}>
@@ -98,7 +105,7 @@ export default function DrawingCanvas() {
         />
         <button onClick={handleClear}>Clear</button>
       </div>}
-      {!isDrawer && <button onClick={startDrawing}>DRAW!!</button>}
+      {/* {!isDrawer && <button onClick={startDrawing}>DRAW!!</button>} */}
 
       {/* Canvas */}
       <Stage

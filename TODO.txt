@@ -3,16 +3,14 @@ A. Common Things
 2. styling, UI
 3. broadcast/chatbox
 
-B. utilities
-1. collaborative code editor
-2. Whiteboard[some shapes,text,lines feature and all too for flowcharts]
-3.
 
-A. GAMES
-1. Fix broadcasting drawing
-2. make it one at a time (like skribbl type where other guesses/chatbox)
-3.Tictactoe/rock paper
-
- disconnect, if you're tracking users or rooms, consider cleaning up unused rooms if empty.
-
-You may later want to rate-limit drawing events to avoid excessive traffic from spamming.
+1. generate unique room id, store in db?? [not current predefined ones]
+2. chatbox to guess
+3. styling, UI
+4.configurable number of rooms, players, drawing timer.
+5.handle proper auth for accessing /game.
+6.FORM VALIDATION
+7.shift join room to home.jsx instead of /game?
+8. duplicate users currently in rooms(due to strict mode--fix)
+9. word pool+ random 3 choices for user to pick
+10. optimizations like localstorage etc
