@@ -80,7 +80,7 @@ export default function DrawingCanvas() {
   };
 
   const handleClear = () => {
-    setLines([]);
+    // setLines([]);
     if (connected) socket.emit('clear', {roomID});
   };
 
