@@ -28,7 +28,7 @@ io.on('connection', (socket)    => {
                 round:0,
                 numRounds: 3, //hardcoded for now
                 timer: 10000,  //hardcoded for now,
-                gameInterval: null
+                currentWord:null
             };
         }
 //         if (!rooms[roomID].players.includes(socket.id)) {
@@ -88,6 +88,7 @@ if (!rooms[roomID].players.includes(socket.id)) {
     socket.on('word-chosen', (word)=>{
         const room = rooms[socket.roomID];
         const currDrawer=room.drawerIndex;
+        room.currentWord=word;
         console.log('Now drawing..');
         io.to(socket.roomID).emit('set-drawer', room.players[currDrawer], word);
         io.to(socket.roomID).emit('timer-start', { duration: room.timer });
@@ -105,6 +106,17 @@ if (!rooms[roomID].players.includes(socket.id)) {
             io.to(socket.roomID).emit('choose-word', {words, drawerID: room.players[room.drawerIndex]}); 
         }
         }, room.timer);
+    });
+
+     socket.on('chat-message', (msg) => {
+        const room = rooms[socket.roomID];
+        if (!room) return;
+        // Check for correct guess (case-insensitive)
+        if (room.currentWord && msg.trim().toLowerCase() === room.currentWord.trim().toLowerCase()) {
+            io.to(socket.roomID).emit('chat-message', { name: socket.name, msg: 'guessed the word!', correct: true });
+        } else {
+            io.to(socket.roomID).emit('chat-message', { name: socket.name, msg, correct: false });
+        }
     });
 });
 

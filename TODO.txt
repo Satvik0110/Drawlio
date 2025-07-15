@@ -1,5 +1,5 @@
 1. generate unique room id--------------------------------IN PROGRESS
-2. chatbox to guess
+2. chatbox to guess--------DONE
 3. styling, UI
 4.configurable number of rooms, players, drawing timer. -----------IN PROGRESS
 5.handle proper auth for accessing /game.
@@ -16,7 +16,8 @@
 In order:
 2. Generate unique room ID,Configurable no. of players, rounds, drawing timer..try to fix delay on pressing start
 3. modularize and refactor existing client side and server code.
-4. Chatbox, guess system
 
 ...Separate guesser and drawer roles as can see params..
 if drawer disconnects...
+refine chatbox (guessers and drawer can taklk to each other instead of disabling)
+

@@ -2,6 +2,7 @@ import { Stage, Layer, Line } from 'react-konva';
 import { useState, useRef, useContext, useEffect } from 'react';
 import { SocketContext } from '../SocketProvider';
 import WordChoiceModal from '../components/WordChoiceModal';
+import ChatBox from '../components/ChatBox';
 
 export default function DrawingCanvas() {
   const {socket, connected, roomID, name} = useContext(SocketContext); 
@@ -16,7 +17,9 @@ export default function DrawingCanvas() {
   const [showModal, setShowModal] = useState(false);
   const [displayWord, setdisplayWord]= useState(null);
   const [timer, setTimer] = useState(null);
-
+  const [chatInput, setChatInput] = useState('');
+  const [chatMessages, setChatMessages] = useState([]);
+  const [disableChat, setdisableChat]= useState(false);
   useEffect(()=>{
     socket.emit('join-room', {roomID, name}); 
     socket.emit('get-initial-lines');
@@ -36,6 +39,7 @@ export default function DrawingCanvas() {
         });
         socket.on('set-drawer', (socketID, word)=>{
           setDrawer(socket.id===socketID);
+          setdisableChat(socket.id===socketID);
           const spaced = word.split('').map(c => c === ' ' ? '  ' : c).join(' ');
           setdisplayWord(socket.id===socketID ? spaced : spaced.replace(/[A-Z]/gi, '_'));
         });
@@ -72,7 +76,13 @@ export default function DrawingCanvas() {
             setLines([]);
             setdisplayWord(null);
             setDrawer(false);
-          })
+            setChatMessages([]);
+          });
+          socket.on('chat-message', (data) => {
+    console.log(data);
+    if(data.correct) setdisableChat(true);
+    setChatMessages(prev => [...prev, data]);
+  });
            
     return ()=>{
       socket.off('draww');
@@ -83,8 +93,27 @@ export default function DrawingCanvas() {
       socket.off('game-over');
       socket.off('choose-word');
       socket.off('timer-start');
+      socket.off('chat-message');
     };
   },[connected, roomID]);
+
+//   useEffect(() => {
+//   socket.on('chat-message', (data) => {
+//     console.log(data);
+//     if(data.correct) setdisableChat(true);
+//     setChatMessages(prev => [...prev, data]);
+//   });
+//   return () => socket.off('chat-message');
+// }, [socket]);
+
+
+const sendChat = (e) => {
+  e.preventDefault();
+  if (chatInput.trim()) {
+    socket.emit('chat-message', chatInput);
+    setChatInput('');
+  }
+};
 
   const handleMouseDown = (e) => {
     if(!isDrawer) return;
@@ -157,7 +186,13 @@ export default function DrawingCanvas() {
         />
         <button onClick={handleClear}>Clear</button>
       </div>}
-      {/* {!isDrawer && <button onClick={startDrawing}>DRAW!!</button>} */}
+      <ChatBox
+      messages={chatMessages}
+      input={chatInput}
+      setInput={setChatInput}
+      onSend={sendChat}
+      disableSubmit={disableChat}
+    />
 
       {/* Canvas */}
       <Stage
