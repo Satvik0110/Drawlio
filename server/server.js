@@ -4,6 +4,7 @@ const PORT=4000;
 const cors = require('cors');
 const http = require('http');
 const server = http.createServer(app);
+const wordList=require('./words');
 
 app.use(cors());
 const io = require('socket.io')(server, {
@@ -38,7 +39,7 @@ if (!rooms[roomID].players.includes(socket.id)) {
             rooms[roomID].players.push(socket.id);
             socket.roomID=roomID;
             socket.name=name;
-            console.log(`${socket.name} joined room ${socket.roomID}`);
+            console.log(`${rooms[roomID].players.length}`);
             io.to(socket.roomID).emit('user-joined', {name:socket.name, hostID: rooms[socket.roomID].host});
         }
         // rooms[roomID].players.push(socket.id); 
@@ -73,31 +74,42 @@ if (!rooms[roomID].players.includes(socket.id)) {
         rooms[roomID].lines=[];
         io.to(roomID).emit('clear');
     });
-    socket.on('set-drawer', ()=>{
-        const roomID=socket.roomID;
-        socket.to(roomID).emit('set-guesser');
-    });
+    // socket.on('set-drawer', ()=>{
+    //     const roomID=socket.roomID;
+    //     socket.to(roomID).emit('set-guesser');
+    // });
     socket.on('start-game', ()=>{
         const room = rooms[socket.roomID];
         if(room.players.length<2){
             console.log('Insufficient members');
             return;
         }
-        room.gameInterval= setInterval(()=>{
-            if(room.drawerIndex>room.numRounds){
-                clearInterval(room.gameInterval);
-                room.round=0;
-                io.to(socket.roomID).emit('game-over');
-                return;
-            }
-            const currDrawer=room.drawerIndex% room.players.length;
-            io.to(socket.roomID).emit('set-drawer', room.players[currDrawer]);
+        io.to(room.players[room.drawerIndex]).emit('choose-word', ([wordList[0], wordList[1], wordList[2]])); 
+    });
+
+    socket.on('word-chosen', ()=>{
+        const room = rooms[socket.roomID];
+        const currDrawer=room.drawerIndex;
+        console.log('Now drawing..');
+        io.to(socket.roomID).emit('set-drawer', room.players[currDrawer]);
+        // room.gameInterval= setInterval(()=>{
+        //     console.log(`Now drawing: ${room.players[currDrawer]}`);
+        //     room.round++;
+        //     room.drawerIndex= (room.drawerIndex+1) % room.players.length;
+        // },room.timer);
+        setTimeout(() => {
+        room.round++;
+        room.drawerIndex= (room.drawerIndex+1) % room.players.length;
+        if(room.round>room.numRounds){
+            room.round=0;
+            room.drawerIndex=0;
+            io.to(socket.roomID).emit('game-over');
+        }else{
             room.lines=[];
             io.to(socket.roomID).emit('clear');
-            console.log(`Now drawing: ${room.players[currDrawer]}`);
-            room.round++;
-            room.drawerIndex++;
-        },room.timer);
+            io.to(room.players[room.drawerIndex]).emit('choose-word', ([wordList[0], wordList[1], wordList[2]])); 
+        }
+        }, room.timer);
     });
 });
 

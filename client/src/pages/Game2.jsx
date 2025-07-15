@@ -7,6 +7,7 @@ export default function DrawingCanvas() {
   const [color, setColor] = useState('black');
   const [tool, setTool] = useState('brush'); // or 'eraser'
   const [isDrawer, setDrawer]= useState(false);
+  const [temp, setTemp]= useState(false);
   const [isHost, setHost]=useState(false);
   const [showButton, setshowButton]=useState(true);
   const isDrawing = useRef(false);
@@ -26,6 +27,7 @@ export default function DrawingCanvas() {
           });
         socket.on('clear',()=>{
           setLines([]);
+          setTemp(false);
         });
         socket.on('set-drawer', (socketID)=>{
           setDrawer(socket.id===socketID);
@@ -33,8 +35,15 @@ export default function DrawingCanvas() {
          socket.on('game-over', () => {
             setLines([]);
             setDrawer(false);
-            setshowButton(true);
+            setshowButton(true);s
+            setTemp(false);
           });
+          socket.on('choose-word', (words)=>{
+              //  const selected = window.prompt(`Choose a word: ${words.join(', ')}`);
+              //   if(selected && words.includes(selected)) {
+              //     socket.emit('word-chosen');}
+              setTemp(true);
+            });
            
     return ()=>{
       socket.off('draww');
@@ -43,6 +52,7 @@ export default function DrawingCanvas() {
       socket.off('user-joined');
       socket.off('set-drawer');
       socket.off('game-over');
+      socket.off('choose-word');
     };
   },[connected, roomID]);
 
@@ -88,11 +98,14 @@ export default function DrawingCanvas() {
       setshowButton(false);
       socket.emit('start-game');
   }
+  const tempFunc= () =>{
+    socket.emit('word-chosen');
+  }
   return (
      <div>
       <p>{`Hi ${name} `}</p>
       {isHost && showButton && <button onClick={startGame}>START</button>}
-
+      {temp && <button onClick={tempFunc}>CHOSE WORD, NOW DRAW</button>}
       {/* Controls */}  
       {isDrawer && <div style={{ position: 'fixed', top: 30, left: 10, zIndex: 10 }}>
         <button onClick={() => setTool('brush')}>Brush</button>
