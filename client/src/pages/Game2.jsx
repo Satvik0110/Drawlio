@@ -15,6 +15,7 @@ export default function DrawingCanvas() {
   const [wordOptions, setWordOptions] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [displayWord, setdisplayWord]= useState(null);
+  const [timer, setTimer] = useState(null);
 
   useEffect(()=>{
     socket.emit('join-room', {roomID, name}); 
@@ -35,13 +36,14 @@ export default function DrawingCanvas() {
         });
         socket.on('set-drawer', (socketID, word)=>{
           setDrawer(socket.id===socketID);
-          const spaced = word.split('').join(' ');
+          const spaced = word.split('').map(c => c === ' ' ? '  ' : c).join(' ');
           setdisplayWord(socket.id===socketID ? spaced : spaced.replace(/[A-Z]/gi, '_'));
         });
          socket.on('game-over', () => {
             setLines([]);
             setDrawer(false);
             setshowButton(true);
+            setdisplayWord(null);
           });
           socket.on('choose-word', (data)=>{
               const {words, drawerID}= data;
@@ -53,6 +55,24 @@ export default function DrawingCanvas() {
               console.log(`${drawerID} is drawing..`);
             }
             });
+          socket.on('timer-start', ({duration})=>{
+            setTimer(duration/1000); //in seconds
+            let interval=setInterval(()=>{
+                setTimer(prev => {
+                if (prev===1) {
+                  clearInterval(interval);
+                  return null;
+                }
+                return prev - 1;
+            });
+            },1000);
+          return () => clearInterval(interval);
+          })
+          socket.on('turn-over', ()=>{
+            setLines([]);
+            setdisplayWord(null);
+            setDrawer(false);
+          })
            
     return ()=>{
       socket.off('draww');
@@ -62,6 +82,7 @@ export default function DrawingCanvas() {
       socket.off('set-drawer');
       socket.off('game-over');
       socket.off('choose-word');
+      socket.off('timer-start');
     };
   },[connected, roomID]);
 
@@ -122,7 +143,8 @@ export default function DrawingCanvas() {
       }}
     />
   )}
-  {displayWord && <div> {displayWord}</div>}
+  {timer !== null && <div>Time left: {timer}s</div>}
+  {displayWord && <div style={{ whiteSpace: 'pre' }}> {displayWord}</div>}
       {/* Controls */}  
       {isDrawer && <div style={{ position: 'fixed', top: 30, left: 10, zIndex: 10 }}>
         <button onClick={() => setTool('brush')}>Brush</button>

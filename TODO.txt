@@ -9,17 +9,14 @@
 9. word pool+ random 3 choices for user to pick ------------------DONE
 10. optimizations like localstorage etc
 11. Refcator to classes, objects etc-------------------------------IN PROGRESS
-12. On finishing 1 gamne on starting
+12. On finishing 1 gamne on starting -----DONE
 13. winner, points
 [hints system, sounds, avatars, brush size]
 
 In order:
-1. timer display on screen
 2. Generate unique room ID,Configurable no. of players, rounds, drawing timer..try to fix delay on pressing start
 3. modularize and refactor existing client side and server code.
 4. Chatbox, guess system
 
 ...Separate guesser and drawer roles as can see params..
-...BETWEEN THE GAME, substitute for regular 'clear
 if drawer disconnects...
-space separated words should be shown that way in the ui..like I C E  C R E A M

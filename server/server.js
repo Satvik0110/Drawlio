@@ -90,7 +90,7 @@ if (!rooms[roomID].players.includes(socket.id)) {
         const currDrawer=room.drawerIndex;
         console.log('Now drawing..');
         io.to(socket.roomID).emit('set-drawer', room.players[currDrawer], word);
-        
+        io.to(socket.roomID).emit('timer-start', { duration: room.timer });
         setTimeout(() => {
         room.round++;
         room.drawerIndex= (room.drawerIndex+1) % room.players.length;
@@ -100,7 +100,7 @@ if (!rooms[roomID].players.includes(socket.id)) {
             io.to(socket.roomID).emit('game-over');
         }else{
             room.lines=[];
-            io.to(socket.roomID).emit('clear');
+            io.to(socket.roomID).emit('turn-over');
             const words= generateWords();
             io.to(socket.roomID).emit('choose-word', {words, drawerID: room.players[room.drawerIndex]}); 
         }
