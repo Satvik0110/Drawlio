@@ -20,6 +20,11 @@ export default function DrawingCanvas() {
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState([]);
   const [disableChat, setdisableChat]= useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const [resultsData, setResultsData] = useState(null);
+  const [showWinner, setShowWinner] = useState(false);
+  const [winnerData, setWinnerData] = useState(null);
+
   useEffect(()=>{
     socket.emit('join-room', {roomID, name}); 
     socket.emit('get-initial-lines');
@@ -83,6 +88,18 @@ export default function DrawingCanvas() {
     if(data.correct) setdisableChat(true);
     setChatMessages(prev => [...prev, data]);
   });
+
+   socket.on('round-results', (data) => {
+    setResultsData(data);
+    setShowResults(true);
+    setTimeout(() => setShowResults(false), 4000); // Hide after 4s
+  });
+  socket.on('game-over', () => {
+    const entries = Object.entries(resultsData?.points || {});
+    const winner = entries.sort((a, b) => b[1] - a[1])[0];
+    setWinnerData(winner);
+    setShowWinner(true);
+  });
            
     return ()=>{
       socket.off('draww');
@@ -94,18 +111,10 @@ export default function DrawingCanvas() {
       socket.off('choose-word');
       socket.off('timer-start');
       socket.off('chat-message');
+      socket.off('round-results');
+      socket.off('game-over');
     };
-  },[connected, roomID]);
-
-//   useEffect(() => {
-//   socket.on('chat-message', (data) => {
-//     console.log(data);
-//     if(data.correct) setdisableChat(true);
-//     setChatMessages(prev => [...prev, data]);
-//   });
-//   return () => socket.off('chat-message');
-// }, [socket]);
-
+  },[connected, roomID, resultsData]);
 
 const sendChat = (e) => {
   e.preventDefault();
@@ -193,6 +202,26 @@ const sendChat = (e) => {
       onSend={sendChat}
       disableSubmit={disableChat}
     />
+
+    {showResults && resultsData && (
+  <div className="modal">
+    <h2>Round Results</h2>
+    <ul>
+      {Object.entries(resultsData.points).map(([id, pts]) => (
+        <li key={id}>{id === socket.id ? "You" : id}: {pts} pts</li>
+      ))}
+    </ul>
+    <p>Drawer got {resultsData.drawerPoints} pts</p>
+  </div>
+)}
+{showWinner && winnerData && (
+  <div className="modal">
+    <h2>Game Over!</h2>
+    <p>Winner: {winnerData[0] === socket.id ? "You" : winnerData[0]}</p>
+    <p>Points: {winnerData[1]}</p>
+    <button onClick={() => setShowWinner(false)}>Close</button>
+  </div>
+)}
 
       {/* Canvas */}
       <Stage

@@ -28,7 +28,9 @@ io.on('connection', (socket)    => {
                 round:0,
                 numRounds: 3, //hardcoded for now
                 timer: 10000,  //hardcoded for now,
-                currentWord:null
+                currentWord:null,
+                points: {}, 
+                guessed: [], 
             };
         }
 //         if (!rooms[roomID].players.includes(socket.id)) {
@@ -37,6 +39,7 @@ io.on('connection', (socket)    => {
 if (!rooms[roomID].players.includes(socket.id)) {
             socket.join(roomID); // Also creates room if doesntt exist 
             rooms[roomID].players.push(socket.id);
+            rooms[roomID].points[socket.id] = 0; 
             socket.roomID=roomID;
             socket.name=name;
             console.log(`${rooms[roomID].players.length}`);
@@ -89,12 +92,23 @@ if (!rooms[roomID].players.includes(socket.id)) {
         const room = rooms[socket.roomID];
         const currDrawer=room.drawerIndex;
         room.currentWord=word;
+        room.startTime = Date.now();
         console.log('Now drawing..');
         io.to(socket.roomID).emit('set-drawer', room.players[currDrawer], word);
         io.to(socket.roomID).emit('timer-start', { duration: room.timer });
+
         setTimeout(() => {
         room.round++;
         room.drawerIndex= (room.drawerIndex+1) % room.players.length;
+            const drawerID = room.players[room.drawerIndex];
+            const drawerPoints = room.guessed.length * 50; // 50 points per guesser
+            room.points[drawerID] += drawerPoints;
+            io.to(socket.roomID).emit('round-results', {
+            points: room.points,
+            guessed: room.guessed,
+            drawer: drawerID,
+            drawerPoints,
+        });
         if(room.round>room.numRounds){
             room.round=0;
             room.drawerIndex=0;
@@ -113,7 +127,16 @@ if (!rooms[roomID].players.includes(socket.id)) {
         if (!room) return;
         // Check for correct guess (case-insensitive)
         if (room.currentWord && msg.trim().toLowerCase() === room.currentWord.trim().toLowerCase()) {
-            io.to(socket.roomID).emit('chat-message', { name: socket.name, msg: 'guessed the word!', correct: true });
+            const timeLeft = Math.max(0, Math.floor((room.timer - (Date.now() - room.startTime)) / 1000));
+            const basePoints = 100;
+            const bonus = timeLeft * 5;
+            room.points[socket.id] += basePoints + bonus;
+            room.guessed.push(socket.id);
+            io.to(socket.roomID).emit('chat-message', { name: socket.name, msg: 'guessed the word!', correct: true, points: basePoints + bonus  });
+
+        //     if (room.guessed.length === room.players.length - 1) {
+        //     io.to(socket.roomID).emit('turn-over');
+        // }
         } else {
             io.to(socket.roomID).emit('chat-message', { name: socket.name, msg, correct: false });
         }
