@@ -16,7 +16,7 @@ const SocketProvider = ({children}) => {
         socket.on('connect', ()=>{
           console.log('Connected to server', socket.id);
           setConnected(true);
-          navigate('/game2');
+          navigate('/game');
         });
         socket.on('disconnect', () => {
           console.log('Disconnected');

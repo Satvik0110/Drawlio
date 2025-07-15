@@ -1,16 +1,21 @@
 import { Stage, Layer, Line } from 'react-konva';
 import { useState, useRef, useContext, useEffect } from 'react';
 import { SocketContext } from '../SocketProvider';
+import WordChoiceModal from '../components/WordChoiceModal';
+
 export default function DrawingCanvas() {
   const {socket, connected, roomID, name} = useContext(SocketContext); 
   const [lines, setLines] = useState([]);
   const [color, setColor] = useState('black');
   const [tool, setTool] = useState('brush'); // or 'eraser'
   const [isDrawer, setDrawer]= useState(false);
-  const [temp, setTemp]= useState(false);
   const [isHost, setHost]=useState(false);
   const [showButton, setshowButton]=useState(true);
   const isDrawing = useRef(false);
+  const [wordOptions, setWordOptions] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [displayWord, setdisplayWord]= useState(null);
+
   useEffect(()=>{
     socket.emit('join-room', {roomID, name}); 
     socket.emit('get-initial-lines');
@@ -27,22 +32,26 @@ export default function DrawingCanvas() {
           });
         socket.on('clear',()=>{
           setLines([]);
-          setTemp(false);
         });
-        socket.on('set-drawer', (socketID)=>{
+        socket.on('set-drawer', (socketID, word)=>{
           setDrawer(socket.id===socketID);
+          const spaced = word.split('').join(' ');
+          setdisplayWord(socket.id===socketID ? spaced : spaced.replace(/[A-Z]/gi, '_'));
         });
          socket.on('game-over', () => {
             setLines([]);
             setDrawer(false);
-            setshowButton(true);s
-            setTemp(false);
+            setshowButton(true);
           });
-          socket.on('choose-word', (words)=>{
-              //  const selected = window.prompt(`Choose a word: ${words.join(', ')}`);
-              //   if(selected && words.includes(selected)) {
-              //     socket.emit('word-chosen');}
-              setTemp(true);
+          socket.on('choose-word', (data)=>{
+              const {words, drawerID}= data;
+            if(socket.id===drawerID){
+              setWordOptions(words);
+              setShowModal(true);
+            }else{
+              setDrawer(false);
+              console.log(`${drawerID} is drawing..`);
+            }
             });
            
     return ()=>{
@@ -98,14 +107,22 @@ export default function DrawingCanvas() {
       setshowButton(false);
       socket.emit('start-game');
   }
-  const tempFunc= () =>{
-    socket.emit('word-chosen');
-  }
+
   return (
      <div>
       <p>{`Hi ${name} `}</p>
       {isHost && showButton && <button onClick={startGame}>START</button>}
-      {temp && <button onClick={tempFunc}>CHOSE WORD, NOW DRAW</button>}
+        {showModal && (
+    <WordChoiceModal
+      words={wordOptions}
+      onChoose={(word) => {
+        socket.emit('word-chosen', word);
+        setShowModal(false);
+        setWordOptions([]);
+      }}
+    />
+  )}
+  {displayWord && <div> {displayWord}</div>}
       {/* Controls */}  
       {isDrawer && <div style={{ position: 'fixed', top: 30, left: 10, zIndex: 10 }}>
         <button onClick={() => setTool('brush')}>Brush</button>

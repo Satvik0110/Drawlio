@@ -4,7 +4,7 @@ const PORT=4000;
 const cors = require('cors');
 const http = require('http');
 const server = http.createServer(app);
-const wordList=require('./words');
+const generateWords = require('./utils/generateWords');
 
 app.use(cors());
 const io = require('socket.io')(server, {
@@ -74,29 +74,23 @@ if (!rooms[roomID].players.includes(socket.id)) {
         rooms[roomID].lines=[];
         io.to(roomID).emit('clear');
     });
-    // socket.on('set-drawer', ()=>{
-    //     const roomID=socket.roomID;
-    //     socket.to(roomID).emit('set-guesser');
-    // });
+    
     socket.on('start-game', ()=>{
         const room = rooms[socket.roomID];
         if(room.players.length<2){
             console.log('Insufficient members');
             return;
         }
-        io.to(room.players[room.drawerIndex]).emit('choose-word', ([wordList[0], wordList[1], wordList[2]])); 
+        const words= generateWords();
+        io.to(socket.roomID).emit('choose-word', {words, drawerID: room.players[room.drawerIndex]}); 
     });
 
-    socket.on('word-chosen', ()=>{
+    socket.on('word-chosen', (word)=>{
         const room = rooms[socket.roomID];
         const currDrawer=room.drawerIndex;
         console.log('Now drawing..');
-        io.to(socket.roomID).emit('set-drawer', room.players[currDrawer]);
-        // room.gameInterval= setInterval(()=>{
-        //     console.log(`Now drawing: ${room.players[currDrawer]}`);
-        //     room.round++;
-        //     room.drawerIndex= (room.drawerIndex+1) % room.players.length;
-        // },room.timer);
+        io.to(socket.roomID).emit('set-drawer', room.players[currDrawer], word);
+        
         setTimeout(() => {
         room.round++;
         room.drawerIndex= (room.drawerIndex+1) % room.players.length;
@@ -107,7 +101,8 @@ if (!rooms[roomID].players.includes(socket.id)) {
         }else{
             room.lines=[];
             io.to(socket.roomID).emit('clear');
-            io.to(room.players[room.drawerIndex]).emit('choose-word', ([wordList[0], wordList[1], wordList[2]])); 
+            const words= generateWords();
+            io.to(socket.roomID).emit('choose-word', {words, drawerID: room.players[room.drawerIndex]}); 
         }
         }, room.timer);
     });
