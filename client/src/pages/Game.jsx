@@ -53,6 +53,10 @@ export default function DrawingCanvas() {
             setDrawer(false);
             setshowButton(true);
             setdisplayWord(null);
+          //   const entries = Object.entries(resultsData?.points || {});
+          // const winner = entries.sort((a, b) => b[1] - a[1])[0];
+          // setWinnerData(winner);
+          // setShowWinner(true);
           });
           socket.on('choose-word', (data)=>{
               const {words, drawerID}= data;
@@ -92,14 +96,9 @@ export default function DrawingCanvas() {
    socket.on('round-results', (data) => {
     setResultsData(data);
     setShowResults(true);
-    setTimeout(() => setShowResults(false), 4000); // Hide after 4s
+    setTimeout(() => setShowResults(false), 5000); // Hide after 5s
   });
-  socket.on('game-over', () => {
-    const entries = Object.entries(resultsData?.points || {});
-    const winner = entries.sort((a, b) => b[1] - a[1])[0];
-    setWinnerData(winner);
-    setShowWinner(true);
-  });
+
            
     return ()=>{
       socket.off('draww');
@@ -112,7 +111,6 @@ export default function DrawingCanvas() {
       socket.off('timer-start');
       socket.off('chat-message');
       socket.off('round-results');
-      socket.off('game-over');
     };
   },[connected, roomID, resultsData]);
 
@@ -208,10 +206,10 @@ const sendChat = (e) => {
     <h2>Round Results</h2>
     <ul>
       {Object.entries(resultsData.points).map(([id, pts]) => (
-        <li key={id}>{id === socket.id ? "You" : id}: {pts} pts</li>
+        <li key={id}>{id === socket.id ? "You" : id}: {`${pts}(+${resultsData.pointsThisRd[id]})`} pts</li>
       ))}
     </ul>
-    <p>Drawer got {resultsData.drawerPoints} pts</p>
+    {/* <p>Drawer got {resultsData.drawerPoints} pts</p> */}
   </div>
 )}
 {showWinner && winnerData && (

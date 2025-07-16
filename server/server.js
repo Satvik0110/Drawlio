@@ -30,7 +30,9 @@ io.on('connection', (socket)    => {
                 timer: 10000,  //hardcoded for now,
                 currentWord:null,
                 points: {}, 
-                guessed: [], 
+                pointsThisRd:{},
+                guessed: 0, 
+                startTime:null
             };
         }
 //         if (!rooms[roomID].players.includes(socket.id)) {
@@ -40,6 +42,7 @@ if (!rooms[roomID].players.includes(socket.id)) {
             socket.join(roomID); // Also creates room if doesntt exist 
             rooms[roomID].players.push(socket.id);
             rooms[roomID].points[socket.id] = 0; 
+            rooms[roomID].pointsThisRd[socket.id] = 0; 
             socket.roomID=roomID;
             socket.name=name;
             console.log(`${rooms[roomID].players.length}`);
@@ -57,6 +60,8 @@ if (!rooms[roomID].players.includes(socket.id)) {
     socket.on('disconnect', () => {
       console.log(`${socket.name} disconnected`);
       rooms[socket.roomID].players = rooms[socket.roomID].players.filter(id => id!==socket.id);
+      delete rooms[socket.roomID].points[socket.id];
+      delete rooms[socket.roomID].pointsThisRd[socket.id];
       //TO ADD ALL MEMBERS DISCONNECTED PART
       if(rooms[socket.roomID].players.length==0){
         //remove room
@@ -98,24 +103,26 @@ if (!rooms[roomID].players.includes(socket.id)) {
         io.to(socket.roomID).emit('timer-start', { duration: room.timer });
 
         setTimeout(() => {
+        const drawerPoints = room.guessed*50; // 50 points per guesser
+        room.points[room.players[currDrawer]] += drawerPoints;
+        room.pointsThisRd[room.players[currDrawer]] += drawerPoints;
         room.round++;
         room.drawerIndex= (room.drawerIndex+1) % room.players.length;
-            const drawerID = room.players[room.drawerIndex];
-            const drawerPoints = room.guessed.length * 50; // 50 points per guesser
-            room.points[drawerID] += drawerPoints;
+            io.to(socket.roomID).emit('turn-over');
             io.to(socket.roomID).emit('round-results', {
+            pointsThisRd: room.pointsThisRd,
             points: room.points,
-            guessed: room.guessed,
-            drawer: drawerID,
-            drawerPoints,
         });
+        room.guessed=0;
+        for (let key in room.pointsThisRd) room.pointsThisRd[key] = 0;
+        room.lines=[];
         if(room.round>room.numRounds){
             room.round=0;
             room.drawerIndex=0;
             io.to(socket.roomID).emit('game-over');
+            for (let key in room.points) room.points[key] = 0;
+            
         }else{
-            room.lines=[];
-            io.to(socket.roomID).emit('turn-over');
             const words= generateWords();
             io.to(socket.roomID).emit('choose-word', {words, drawerID: room.players[room.drawerIndex]}); 
         }
@@ -130,11 +137,12 @@ if (!rooms[roomID].players.includes(socket.id)) {
             const timeLeft = Math.max(0, Math.floor((room.timer - (Date.now() - room.startTime)) / 1000));
             const basePoints = 100;
             const bonus = timeLeft * 5;
-            room.points[socket.id] += basePoints + bonus;
-            room.guessed.push(socket.id);
+            room.pointsThisRd[socket.id]= basePoints+bonus;
+            room.points[socket.id] += room.pointsThisRd[socket.id];
+            room.guessed+=1;
             io.to(socket.roomID).emit('chat-message', { name: socket.name, msg: 'guessed the word!', correct: true, points: basePoints + bonus  });
 
-        //     if (room.guessed.length === room.players.length - 1) {
+        //     if (room.guessed === room.players.length - 1) {
         //     io.to(socket.roomID).emit('turn-over');
         // }
         } else {
