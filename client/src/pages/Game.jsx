@@ -56,7 +56,7 @@ export default function DrawingCanvas() {
           //   const entries = Object.entries(resultsData?.points || {});
           // const winner = entries.sort((a, b) => b[1] - a[1])[0];
           // setWinnerData(winner);
-          // setShowWinner(true);
+          // setShowWinner(true); 
           });
           socket.on('choose-word', (data)=>{
               const {words, drawerID}= data;
@@ -168,6 +168,7 @@ const sendChat = (e) => {
   return (
      <div>
       <p>{`Hi ${name} `}</p>
+      <p> {`Room ID: ${roomID}`}</p>
       {isHost && showButton && <button onClick={startGame}>START</button>}
         {showModal && (
     <WordChoiceModal

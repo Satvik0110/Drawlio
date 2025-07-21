@@ -11,7 +11,7 @@
 11. Refcator to classes, objects etc-------------------------------IN PROGRESS
 12. On finishing 1 gamne on starting -----DONE
 13. winner, points
-[hints system, sounds, avatars, brush size]
+[hints system, sounds, avatars, brush size] 
 
 In order:
 2. Generate unique room ID,Configurable no. of players, rounds, drawing timer..try to fix delay on pressing start
@@ -21,4 +21,8 @@ In order:
 if drawer disconnects...
 refine chatbox (guessers and drawer can taklk to each other instead of disabling)
 room cleanup ensure...when no member ot when disconnects.
+strucutre backend in mcv way
+alert, dropbox on frontend for timer and all
+early stop on everyone guessing
+bug check: numrounds is actually 1 more than specified..
 

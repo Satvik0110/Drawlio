@@ -5,6 +5,7 @@ const cors = require('cors');
 const http = require('http');
 const server = http.createServer(app);
 const generateWords = require('./utils/generateWords');
+const generateRoomID= require('./utils/generateRoomID');
 
 app.use(cors());
 const io = require('socket.io')(server, {
@@ -12,6 +13,7 @@ const io = require('socket.io')(server, {
         origin: "*",
     }
 });
+app.use(express.json());
 
 let rooms={}
 io.on('connection', (socket)    => {
@@ -19,27 +21,29 @@ io.on('connection', (socket)    => {
     socket.on('join-room', (data) => {
         const {roomID, name}= data;
 
-        if(!rooms[roomID]){
-            rooms[roomID]={
-                players:[],
-                lines:[],
-                drawerIndex:0,
-                host:socket.id,
-                round:0,
-                numRounds: 3, //hardcoded for now
-                timer: 10000,  //hardcoded for now,
-                currentWord:null,
-                points: {}, 
-                pointsThisRd:{},
-                guessed: 0, 
-                startTime:null
-            };
-        }
+        // if(!rooms[roomID]){
+        //     rooms[roomID]={
+        //         players:[],
+        //         lines:[],
+        //         drawerIndex:0,
+        //         host:socket.id,
+        //         round:0,
+        //         numRounds: 3, //hardcoded for now
+        //         timer: 10000,  //hardcoded for now,
+        //         currentWord:null,
+        //         maxPlayers:5, //hardcoded for now
+        //         points: {}, 
+        //         pointsThisRd:{},
+        //         guessed: 0, 
+        //         startTime:null
+        //     };
+        // }
 //         if (!rooms[roomID].players.includes(socket.id)) {
 //   rooms[roomID].players.push(socket.id);
 // }
 if (!rooms[roomID].players.includes(socket.id)) {
-            socket.join(roomID); // Also creates room if doesntt exist 
+            socket.join(roomID); // Also creates room if doesntt exist
+            if(!rooms[roomID].host) rooms[roomID].host=socket.id;  
             rooms[roomID].players.push(socket.id);
             rooms[roomID].points[socket.id] = 0; 
             rooms[roomID].pointsThisRd[socket.id] = 0; 
@@ -155,6 +159,40 @@ if (!rooms[roomID].players.includes(socket.id)) {
 app.get('/', (req,res)=>{
     res.json({message:"Hello world!"});
 });
+
+app.post('/create-room', (req,res)=>{
+    const {numRounds, timer, maxPlayers}= req.body;
+    console.log(numRounds, timer, maxPlayers);
+    if(!numRounds || !timer || !maxPlayers) res.status(401).json({status:'false'});
+   
+    let roomID;
+    do {
+       roomID= generateRoomID();
+    } while (rooms[roomID]);
+        rooms[roomID]={
+                players:[],
+                lines:[],
+                drawerIndex:0,
+                host:null,
+                round:0,
+                numRounds: numRounds,
+                timer: timer*1000, 
+                maxPlayers: maxPlayers,
+                currentWord:null,
+                points: {}, 
+                pointsThisRd:{},
+                guessed: 0, 
+                startTime:null
+            };
+            return res.status(201).json({code:roomID});
+})
+app.post('/join-room', (req,res)=>{
+    const {id} = req.body;
+    if(!id || !rooms[id]) return res.status(400).json({msg: 'ROom not found!'});
+    else if(rooms[id].players.length==rooms[id].maxPlayers) return res.status(400).json({msg: 'ROom full'});
+   return res.status(200).json({msg:'success'});
+    
+})
 
 server.listen(PORT, ()=>{
     console.log(`Server is listening on port ${PORT}`);
