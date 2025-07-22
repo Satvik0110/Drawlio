@@ -102,12 +102,15 @@ class Room{
             this.round=0;
             this.drawerIndex=0;
             this.currentWord=null;
-            for (let key in this.points) this.points[key] = 0;
-            return true;
+            for (let key in this.points) this.points[key] = 0; 
         }
-        return false;
+    
     }
     //return defined timer
+    checkRounds(){
+        return this.round+1 >= this.numRounds;
+    }
+
     getTimer(){
         return this.timer;
     }

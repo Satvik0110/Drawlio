@@ -10,7 +10,7 @@ export default function DrawingCanvas() {
   const [color, setColor] = useState('#000000');
   const [tool, setTool] = useState('brush'); 
   const [isDrawer, setDrawer]= useState(false);
-  const [isHost, setHost]=useState(false);
+  const [Host, setHost]=useState(null);
   const [showButton, setshowButton]=useState(true);
   const isDrawing = useRef(false);
   const [wordOptions, setWordOptions] = useState([]);
@@ -36,7 +36,7 @@ export default function DrawingCanvas() {
     });
     socket.on('user-joined', (data)=>{
       const {newPlayers,hostID}= data;
-      setHost(socket.id===hostID);
+      setHost(hostID);
       setPlayers(newPlayers);
       console.log(`new user joined the room!!`);
     });
@@ -49,11 +49,11 @@ export default function DrawingCanvas() {
         socket.on('set-drawer', (socketID, word)=>{
           setDrawer(socket.id===socketID);
           setdisableChat(socket.id===socketID);
-          setCurrentDrawer(players[socketID]);
+          setCurrentDrawer(socketID);
           const spaced = word.split('').map(c => c === ' ' ? '  ' : c).join(' ');
           setdisplayWord(socket.id===socketID ? spaced : spaced.replace(/[A-Z]/gi, '_'));
         });
-         socket.on('game-over', (finalResults) => {
+         socket.on('game-over', (points) => {
             if (timerInterval.current) {
               clearInterval(timerInterval.current);
               timerInterval.current = null;
@@ -65,9 +65,12 @@ export default function DrawingCanvas() {
             setdisableChat(false);
             setCurrentDrawer(null);
             setTimer(null);
-            const pointsToUse = finalResults?.points || resultsData?.points || {};
-            const entries = Object.entries(pointsToUse);
+            // const pointsToUse = finalResults?.points || resultsData?.points || {};
+            const entries = Object.entries(points);
             const winner = entries.sort((a, b) => b[1] - a[1])[0];
+            console.log(points);
+            console.log(entries);
+            console.log(winner);
             setWinnerData(winner);
             setShowWinner(true);
             setTimeout(() => setShowWinner(false), 10000);
@@ -120,7 +123,7 @@ export default function DrawingCanvas() {
    socket.on('round-results', (data) => {
     setResultsData(data);
     setShowResults(true);
-    setTimeout(() => setShowResults(false), 3000);
+    setTimeout(() => setShowResults(false), 4000);
   });
   socket.on('disconnect-user', (id)=>{
     console.log(`${players[id]} disconnected`);
@@ -208,7 +211,7 @@ const sendChat = (e) => {
           <div className="flex items-center space-x-6">
             {currentDrawer && (
               <div className="text-sm font-medium text-blue-600">
-                {currentDrawer === socket.id ? "You are drawing" : `${currentDrawer} is drawing`}
+                {currentDrawer === socket.id ? "You are drawing" : `${players[currentDrawer]} is drawing`}
               </div>
             )}
             
@@ -256,7 +259,7 @@ const sendChat = (e) => {
                   Drawing
                 </span>
               )}
-              {isHost && socketId === socket.id && (
+              {Host===socketId && (
                 <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">
                   Host
                 </span>
@@ -266,8 +269,8 @@ const sendChat = (e) => {
         </div>
       </div>
       
-      {isHost && showButton && (
-        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
+      {Host===socket.id && showButton && (
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20">
           <button
             onClick={startGame}
             className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg text-xl font-semibold shadow-lg transition-colors"

@@ -25,14 +25,16 @@ module.exports = (socket, io, rooms) => {
             const drawerPoints = room.getGuessed() * 50; // 50 points per guesser
             const [points, pointsThisRd] = room.handleRoundEnd(drawerPoints);
 
-            io.to(socket.roomID).emit('turn-over');
             io.to(socket.roomID).emit('round-results', {
                 pointsThisRd,
                 points,
             });
-            if (room.prepareNextRound()) {
-                io.to(socket.roomID).emit('game-over',{points});
+            io.to(socket.roomID).emit('turn-over');
+            if (room.checkRounds()) {
+                io.to(socket.roomID).emit('game-over',points);
+                room.prepareNextRound();
             } else {
+                room.prepareNextRound();
                 const words = generateWords();
                 io.to(socket.roomID).emit('choose-word', { words, drawerID: room.getDrawerID() });
             }

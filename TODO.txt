@@ -3,6 +3,8 @@
 14. early stop round on everyone guessing
 15. correct error codes.
 start if not sufficient, check on frontend only maybe...
-chat, code copy avaialble even before start rn cant press...
-is drawing... wala part and check frotnend code
-final winner not showing correctly..
+joining, creating errors on frontend display instead of logging
+trim at start and end of room code adn name and all
+
+Add Project name DrawInk
+points below the members list
