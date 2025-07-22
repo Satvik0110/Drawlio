@@ -6,6 +6,7 @@ const http = require('http');
 const server = http.createServer(app);
 const generateWords = require('./utils/generateWords');
 const generateRoomID= require('./utils/generateRoomID');
+const Room= require('./models/Room');
 
 app.use(cors());
 const io = require('socket.io')(server, {
@@ -16,59 +17,29 @@ const io = require('socket.io')(server, {
 app.use(express.json());
 
 let rooms={}
+
 io.on('connection', (socket)    => {
     console.log(`${socket.id} user just connected!`);   
     socket.on('join-room', (data) => {
         const {roomID, name}= data;
-
-        // if(!rooms[roomID]){
-        //     rooms[roomID]={
-        //         players:[],
-        //         lines:[],
-        //         drawerIndex:0,
-        //         host:socket.id,
-        //         round:0,
-        //         numRounds: 3, //hardcoded for now
-        //         timer: 10000,  //hardcoded for now,
-        //         currentWord:null,
-        //         maxPlayers:5, //hardcoded for now
-        //         points: {}, 
-        //         pointsThisRd:{},
-        //         guessed: 0, 
-        //         startTime:null
-        //     };
-        // }
-//         if (!rooms[roomID].players.includes(socket.id)) {
-//   rooms[roomID].players.push(socket.id);
-// }
-if (!rooms[roomID].players.includes(socket.id)) {
+        if(rooms[roomID].addPlayer(socket.id)){
             socket.join(roomID); // Also creates room if doesntt exist
-            if(!rooms[roomID].host) rooms[roomID].host=socket.id;  
-            rooms[roomID].players.push(socket.id);
-            rooms[roomID].points[socket.id] = 0; 
-            rooms[roomID].pointsThisRd[socket.id] = 0; 
             socket.roomID=roomID;
             socket.name=name;
-            console.log(`${rooms[roomID].players.length}`);
-            io.to(socket.roomID).emit('user-joined', {name:socket.name, hostID: rooms[socket.roomID].host});
+            rooms[roomID]
         }
-        // rooms[roomID].players.push(socket.id); 
+        io.to(socket.roomID).emit('user-joined', {name:socket.name, hostID: rooms[socket.roomID].getHostID()});
   });
 
 
     socket.on('get-initial-lines', ()=>{
-        socket.emit('initial-lines', rooms[socket.roomID].lines);
+        socket.emit('initial-lines', rooms[socket.roomID].getLines()); 
     });
 
    
     socket.on('disconnect', () => {
       console.log(`${socket.name} disconnected`);
-      rooms[socket.roomID].players = rooms[socket.roomID].players.filter(id => id!==socket.id);
-      delete rooms[socket.roomID].points[socket.id];
-      delete rooms[socket.roomID].pointsThisRd[socket.id];
-      //TO ADD ALL MEMBERS DISCONNECTED PART
-      if(rooms[socket.roomID].players.length==0){
-        //remove room
+      if(rooms[socket.roomID].deletePlayer(socket.id)){
         console.log('Empty room...deleting');
         delete rooms[socket.roomID];
       }
@@ -77,81 +48,62 @@ if (!rooms[roomID].players.includes(socket.id)) {
    
     socket.on('drawing', (data)=>{
         const roomID=socket.roomID;
-        rooms[roomID].lines.push(data.lastLine);
+        rooms[roomID].setLines(data.lastLine);
         socket.to(roomID).emit('draww', data);
     });
 
       socket.on('clear', ()=>{
         const roomID=socket.roomID;
-        rooms[roomID].lines=[];
+        rooms[roomID].clearLines()
         io.to(roomID).emit('clear');
     });
     
     socket.on('start-game', ()=>{
         const room = rooms[socket.roomID];
-        if(room.players.length<2){
+        if(!room.checkSufficientMembers()){ 
             console.log('Insufficient members');
             return;
         }
         const words= generateWords();
-        io.to(socket.roomID).emit('choose-word', {words, drawerID: room.players[room.drawerIndex]}); 
+        io.to(socket.roomID).emit('choose-word', {words, drawerID: room.getDrawerID()});
     });
 
     socket.on('word-chosen', (word)=>{
         const room = rooms[socket.roomID];
-        const currDrawer=room.drawerIndex;
-        room.currentWord=word;
-        room.startTime = Date.now();
+        const [drawerID, timer]=room.roundStart(word);
+       
         console.log('Now drawing..');
-        io.to(socket.roomID).emit('set-drawer', room.players[currDrawer], word);
-        io.to(socket.roomID).emit('timer-start', { duration: room.timer });
+        io.to(socket.roomID).emit('set-drawer', drawerID, word);
+        io.to(socket.roomID).emit('timer-start', { duration: timer });
 
         setTimeout(() => {
-        const drawerPoints = room.guessed*50; // 50 points per guesser
-        room.points[room.players[currDrawer]] += drawerPoints;
-        room.pointsThisRd[room.players[currDrawer]] += drawerPoints;
-        room.round++;
-        room.drawerIndex= (room.drawerIndex+1) % room.players.length;
-            io.to(socket.roomID).emit('turn-over');
-            io.to(socket.roomID).emit('round-results', {
-            pointsThisRd: room.pointsThisRd,
-            points: room.points,
+        const drawerPoints = room.getGuessed()*50; // 50 points per guesser
+        const [points, pointsThisRd]= room.handleRoundEnd(drawerPoints);
+       
+        io.to(socket.roomID).emit('turn-over');
+        io.to(socket.roomID).emit('round-results', {
+            pointsThisRd,
+            points,
         });
-        room.guessed=0;
-        for (let key in room.pointsThisRd) room.pointsThisRd[key] = 0;
-        room.lines=[];
-        if(room.round>room.numRounds){
-            room.round=0;
-            room.drawerIndex=0;
+        if(room.prepareNextRound()){
             io.to(socket.roomID).emit('game-over');
-            for (let key in room.points) room.points[key] = 0;
-            
         }else{
             const words= generateWords();
-            io.to(socket.roomID).emit('choose-word', {words, drawerID: room.players[room.drawerIndex]}); 
+            io.to(socket.roomID).emit('choose-word', {words, drawerID: room.getDrawerID()}); 
         }
-        }, room.timer);
+        }, room.getTimer());
     });
 
      socket.on('chat-message', (msg) => {
         const room = rooms[socket.roomID];
-        if (!room) return;
-        // Check for correct guess (case-insensitive)
-        if (room.currentWord && msg.trim().toLowerCase() === room.currentWord.trim().toLowerCase()) {
-            const timeLeft = Math.max(0, Math.floor((room.timer - (Date.now() - room.startTime)) / 1000));
-            const basePoints = 100;
-            const bonus = timeLeft * 5;
-            room.pointsThisRd[socket.id]= basePoints+bonus;
-            room.points[socket.id] += room.pointsThisRd[socket.id];
-            room.guessed+=1;
-            io.to(socket.roomID).emit('chat-message', { name: socket.name, msg: 'guessed the word!', correct: true, points: basePoints + bonus  });
+            const check= room.checkGuess(msg, socket.id);
 
-        //     if (room.guessed === room.players.length - 1) {
-        //     io.to(socket.roomID).emit('turn-over');
-        // }
-        } else {
-            io.to(socket.roomID).emit('chat-message', { name: socket.name, msg, correct: false });
-        }
+            if(check[0]){
+                io.to(socket.roomID).emit('chat-message', { name: socket.name, msg: 'guessed the word!', correct: true, points:check[1]});
+            }else{
+                io.to(socket.roomID).emit('chat-message', { name: socket.name, msg, correct: false });
+
+            }
     });
 });
 
@@ -162,35 +114,22 @@ app.get('/', (req,res)=>{
 
 app.post('/create-room', (req,res)=>{
     const {numRounds, timer, maxPlayers}= req.body;
-    console.log(numRounds, timer, maxPlayers);
+    console.log(numRounds, timer, maxPlayers); 
     if(!numRounds || !timer || !maxPlayers) res.status(401).json({status:'false'});
-   
+
     let roomID;
     do {
        roomID= generateRoomID();
     } while (rooms[roomID]);
-        rooms[roomID]={
-                players:[],
-                lines:[],
-                drawerIndex:0,
-                host:null,
-                round:0,
-                numRounds: numRounds,
-                timer: timer*1000, 
-                maxPlayers: maxPlayers,
-                currentWord:null,
-                points: {}, 
-                pointsThisRd:{},
-                guessed: 0, 
-                startTime:null
-            };
-            return res.status(201).json({code:roomID});
+        rooms[roomID]= new Room(roomID, timer, maxPlayers, numRounds);
+        return res.status(201).json({code:roomID});
 })
-app.post('/join-room', (req,res)=>{
+
+app.post('/join-room', (req,res)=>{ 
     const {id} = req.body;
-    if(!id || !rooms[id]) return res.status(400).json({msg: 'ROom not found!'});
-    else if(rooms[id].players.length==rooms[id].maxPlayers) return res.status(400).json({msg: 'ROom full'});
-   return res.status(200).json({msg:'success'});
+    if(!id || !rooms[id]) return res.status(400).json({msg: 'Room not found!'});
+    else if(rooms[id].checkSufficientMembers()) return res.status(400).json({msg: 'Room full'});
+    return res.status(200).json({msg:'success'});
     
 })
 
