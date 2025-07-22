@@ -1,17 +1,8 @@
-1. styling, UI
 2.handle proper auth for accessing /game.
-3.FORM VALIDATION
-4. optimizations like localstorage etc
-5. Refcator to classes, objects etc-------------------------------IN PROGRESS
-6. winner, points
-7.[hints system, sounds, avatars, brush size] 
-8.modularize and refactor existing client side and server code.
-9.Separate guesser and drawer roles as can see params..
 10.if drawer disconnects...handle and switch drawer to next
-11. room cleanup ensure...when no member ot when disconnects.
-12.strucutre backend in mcv way
-13. alert, dropbox on frontend for timer and all
 14. early stop round on everyone guessing
-15. bug check: numrounds is actually 1 more than specified..
-16. random start instead of always host(then circular)
-
+15. correct error codes.
+start if not sufficient, check on frontend only maybe...
+chat, code copy avaialble even before start rn cant press...
+is drawing... wala part and check frotnend code
+final winner not showing correctly..

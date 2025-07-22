@@ -8,7 +8,7 @@ export default function DrawingCanvas() {
   const {socket, connected, roomID, name} = useContext(SocketContext); 
   const [lines, setLines] = useState([]);
   const [color, setColor] = useState('#000000');
-  const [tool, setTool] = useState('brush'); // or 'eraser'
+  const [tool, setTool] = useState('brush'); 
   const [isDrawer, setDrawer]= useState(false);
   const [isHost, setHost]=useState(false);
   const [showButton, setshowButton]=useState(true);
@@ -24,6 +24,9 @@ export default function DrawingCanvas() {
   const [resultsData, setResultsData] = useState(null);
   const [showWinner, setShowWinner] = useState(false);
   const [winnerData, setWinnerData] = useState(null);
+  const [currentDrawer, setCurrentDrawer] = useState(null);
+  const [players, setPlayers]= useState({});
+  const timerInterval = useRef(null);
 
   useEffect(()=>{
     socket.emit('join-room', {roomID, name}); 
@@ -32,9 +35,10 @@ export default function DrawingCanvas() {
       setLines(lines);
     });
     socket.on('user-joined', (data)=>{
-      const {name,hostID}= data;
+      const {newPlayers,hostID}= data;
       setHost(socket.id===hostID);
-      console.log(`${name} joined the room!!`);
+      setPlayers(newPlayers);
+      console.log(`new user joined the room!!`);
     });
         socket.on('draww', (data) => {
             setLines(prevLines => [...prevLines, data.lastLine]);
@@ -45,18 +49,28 @@ export default function DrawingCanvas() {
         socket.on('set-drawer', (socketID, word)=>{
           setDrawer(socket.id===socketID);
           setdisableChat(socket.id===socketID);
+          setCurrentDrawer(players[socketID]);
           const spaced = word.split('').map(c => c === ' ' ? '  ' : c).join(' ');
           setdisplayWord(socket.id===socketID ? spaced : spaced.replace(/[A-Z]/gi, '_'));
         });
-         socket.on('game-over', () => {
+         socket.on('game-over', (finalResults) => {
+            if (timerInterval.current) {
+              clearInterval(timerInterval.current);
+              timerInterval.current = null;
+            }
             setLines([]);
             setDrawer(false);
             setshowButton(true);
             setdisplayWord(null);
-          //   const entries = Object.entries(resultsData?.points || {});
-          // const winner = entries.sort((a, b) => b[1] - a[1])[0];
-          // setWinnerData(winner);
-          // setShowWinner(true); 
+            setdisableChat(false);
+            setCurrentDrawer(null);
+            setTimer(null);
+            const pointsToUse = finalResults?.points || resultsData?.points || {};
+            const entries = Object.entries(pointsToUse);
+            const winner = entries.sort((a, b) => b[1] - a[1])[0];
+            setWinnerData(winner);
+            setShowWinner(true);
+            setTimeout(() => setShowWinner(false), 10000);
           });
           socket.on('choose-word', (data)=>{
               const {words, drawerID}= data;
@@ -65,27 +79,37 @@ export default function DrawingCanvas() {
               setShowModal(true);
             }else{
               setDrawer(false);
+              setCurrentDrawer(drawerID);
               console.log(`${drawerID} is drawing..`);
             }
             });
           socket.on('timer-start', ({duration})=>{
-            setTimer(duration/1000); //in seconds
-            let interval=setInterval(()=>{
+            if (timerInterval.current) {
+              clearInterval(timerInterval.current);
+            }
+            setTimer(duration/1000);
+            timerInterval.current = setInterval(()=>{
                 setTimer(prev => {
-                if (prev===1) {
-                  clearInterval(interval);
+                if (prev === null || prev <= 1) {
+                  clearInterval(timerInterval.current);
+                  timerInterval.current = null;
                   return null;
                 }
                 return prev - 1;
             });
             },1000);
-          return () => clearInterval(interval);
           })
           socket.on('turn-over', ()=>{
+            if (timerInterval.current) {
+              clearInterval(timerInterval.current);
+              timerInterval.current = null;
+            }
             setLines([]);
             setdisplayWord(null);
             setDrawer(false);
             setChatMessages([]);
+            setCurrentDrawer(null);
+            setTimer(null);
           });
           socket.on('chat-message', (data) => {
     console.log(data);
@@ -96,11 +120,17 @@ export default function DrawingCanvas() {
    socket.on('round-results', (data) => {
     setResultsData(data);
     setShowResults(true);
-    setTimeout(() => setShowResults(false), 5000); // Hide after 5s
+    setTimeout(() => setShowResults(false), 3000);
   });
-
+  socket.on('disconnect-user', (id)=>{
+    console.log(`${players[id]} disconnected`);
+   setPlayers(prev => prev.filter(player => player.id!==id));
+  })
            
     return ()=>{
+      if (timerInterval.current) {
+        clearInterval(timerInterval.current);
+      }
       socket.off('draww');
       socket.off('clear');
       socket.off('initial-lines');
@@ -109,8 +139,10 @@ export default function DrawingCanvas() {
       socket.off('game-over');
       socket.off('choose-word');
       socket.off('timer-start');
+      socket.off('turn-over');
       socket.off('chat-message');
       socket.off('round-results');
+      socket.off('disconnect-user');
     };
   },[connected, roomID, resultsData]);
 
@@ -156,7 +188,6 @@ const sendChat = (e) => {
   };
 
   const handleClear = () => {
-    // setLines([]);
     if (connected) socket.emit('clear', {roomID});
   };
 
@@ -166,84 +197,216 @@ const sendChat = (e) => {
   }
 
   return (
-     <div>
-      <p>{`Hi ${name} `}</p>
-      <p> {`Room ID: ${roomID}`}</p>
-      {isHost && showButton && <button onClick={startGame}>START</button>}
-        {showModal && (
-    <WordChoiceModal
-      words={wordOptions}
-      onChoose={(word) => {
-        socket.emit('word-chosen', word);
-        setShowModal(false);
-        setWordOptions([]);
-      }}
-    />
-  )}
-  {timer !== null && <div>Time left: {timer}s</div>}
-  {displayWord && <div style={{ whiteSpace: 'pre' }}> {displayWord}</div>}
-      {/* Controls */}  
-      {isDrawer && <div style={{ position: 'fixed', top: 30, left: 10, zIndex: 10 }}>
-        <button onClick={() => setTool('brush')}>Brush</button>
-        <button onClick={() => setTool('eraser')}>Eraser</button>
-        <input
-          type="color"
-          value={color}
-          onChange={(e) => setColor(e.target.value)}
-          disabled={tool === 'eraser'}
-        />
-        <button onClick={handleClear}>Clear</button>
-      </div>}
-      <ChatBox
-      messages={chatMessages}
-      input={chatInput}
-      setInput={setChatInput}
-      onSend={sendChat}
-      disableSubmit={disableChat}
-    />
+     <div className="relative h-screen w-screen bg-gray-50 overflow-hidden">
+      <div className="absolute top-0 left-0 right-0 bg-white shadow-md z-30 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="text-lg font-semibold text-gray-700">Hi {name}</div>
+            <div className="text-sm text-gray-500">Room: {roomID}</div>
+          </div>
+          
+          <div className="flex items-center space-x-6">
+            {currentDrawer && (
+              <div className="text-sm font-medium text-blue-600">
+                {currentDrawer === socket.id ? "You are drawing" : `${currentDrawer} is drawing`}
+              </div>
+            )}
+            
+            {timer !== null && (
+              <div className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-medium">
+                {timer}s left
+              </div>
+            )}
+            
+            {displayWord && (
+              <div className="bg-blue-100 text-blue-800 px-4 py-2 rounded-lg font-mono text-lg">
+                {displayWord}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
-    {showResults && resultsData && (
-  <div className="modal">
-    <h2>Round Results</h2>
-    <ul>
-      {Object.entries(resultsData.points).map(([id, pts]) => (
-        <li key={id}>{id === socket.id ? "You" : id}: {`${pts}(+${resultsData.pointsThisRd[id]})`} pts</li>
-      ))}
-    </ul>
-    {/* <p>Drawer got {resultsData.drawerPoints} pts</p> */}
-  </div>
-)}
-{showWinner && winnerData && (
-  <div className="modal">
-    <h2>Game Over!</h2>
-    <p>Winner: {winnerData[0] === socket.id ? "You" : winnerData[0]}</p>
-    <p>Points: {winnerData[1]}</p>
-    <button onClick={() => setShowWinner(false)}>Close</button>
-  </div>
-)}
-
-      {/* Canvas */}
-      <Stage
-        width={window.innerWidth}
-        height={window.innerHeight}
-        onMouseDown={handleMouseDown}
-        onMousemove={handleMouseMove}
-        onMouseup={handleMouseUp}
-      >
-        <Layer>
-          {lines.map((line, i) => (
-            <Line
-              key={i}
-              points={line.points}
-              stroke={line.tool === 'eraser' ? 'white' : line.stroke}
-              strokeWidth={line.strokeWidth}
-              tension={0.5}
-              lineCap="round"
-              globalCompositeOperation={line.tool === 'eraser' ? 'destination-out' : 'source-over'}
-            />
+      <div className="absolute top-20 right-4 bg-white rounded-lg shadow-lg p-4 z-20 w-64">
+        <h3 className="text-lg font-semibold text-gray-800 mb-3 text-center border-b pb-2">
+          Players ({Object.keys(players).length})
+        </h3>
+        <div className="space-y-2 max-h-48 overflow-y-auto">
+          {Object.entries(players).map(([socketId, playerName]) => (
+            <div 
+              key={socketId} 
+              className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
+                socketId === socket.id 
+                  ? 'bg-blue-100 border-2 border-blue-300' 
+                  : 'bg-gray-50 hover:bg-gray-100'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <div className={`w-3 h-3 rounded-full ${
+                  socketId === currentDrawer ? 'bg-green-500' : 'bg-gray-400'
+                }`}></div>
+                <span className={`font-medium ${
+                  socketId === socket.id ? 'text-blue-700' : 'text-gray-700'
+                }`}>
+                  {socketId === socket.id ? `${playerName} (You)` : playerName}
+                </span>
+              </div>
+              {socketId === currentDrawer && (
+                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                  Drawing
+                </span>
+              )}
+              {isHost && socketId === socket.id && (
+                <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">
+                  Host
+                </span>
+              )}
+            </div>
           ))}
-        </Layer>
-      </Stage>
+        </div>
+      </div>
+      
+      {isHost && showButton && (
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
+          <button
+            onClick={startGame}
+            className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg text-xl font-semibold shadow-lg transition-colors"
+          >
+            START GAME
+          </button>
+        </div>
+      )}
+
+      {showModal && (
+        <WordChoiceModal
+          words={wordOptions}
+          onChoose={(word) => {
+            socket.emit('word-chosen', word);
+            setShowModal(false);
+            setWordOptions([]);
+          }}
+        />
+      )}
+
+      {showResults && resultsData && (
+        <div className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-white rounded-lg shadow-2xl p-6 z-50 border-2 border-blue-200">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">Round Results</h2>
+            <div className="space-y-2">
+              {Object.entries(resultsData.points)
+                .sort((a, b) => b[1] - a[1])
+                .map(([id, pts]) => (
+                <div key={id} className="flex justify-between items-center bg-gray-50 px-4 py-2 rounded">
+                  <span className="font-medium">
+                    {id === socket.id ? "You" : players[id]}
+                  </span>
+                  <span className="text-blue-600 font-bold">
+                    {pts} <span className="text-green-600">(+{resultsData.pointsThisRd[id]})</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showWinner && winnerData && (
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-2xl p-8 text-center max-w-md">
+            <h2 className="text-3xl font-bold text-gray-800 mb-4">Game Over!</h2>
+            <div className="mb-6">
+              <div className="text-xl text-gray-600 mb-2">Winner:</div>
+              <div className="text-2xl font-bold text-green-600">
+                {winnerData[0] === socket.id ? "You" : players[winnerData[0]]}
+              </div>
+            </div>
+            <div className="text-lg text-gray-700">
+              Final Score: <span className="font-bold text-blue-600">{winnerData[1]} points</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isDrawer && (
+        <div className="absolute top-20 left-4 bg-white rounded-lg shadow-lg p-4 z-20">
+          <div className="flex flex-col space-y-3">
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setTool('brush')}
+                className={`px-4 py-2 rounded transition-colors ${
+                  tool === 'brush' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Brush
+              </button>
+              <button
+                onClick={() => setTool('eraser')}
+                className={`px-4 py-2 rounded transition-colors ${
+                  tool === 'eraser' 
+                    ? 'bg-red-600 text-white' 
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Eraser
+              </button>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <label className="text-sm font-medium text-gray-700">Color:</label>
+              <input
+                type="color"
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                disabled={tool === 'eraser'}
+                className="w-12 h-8 rounded border border-gray-300 cursor-pointer disabled:opacity-50"
+              />
+            </div>
+            
+            <button
+              onClick={handleClear}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition-colors"
+            >
+              Clear Canvas
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div>
+        <ChatBox
+          messages={chatMessages}
+          input={chatInput}
+          setInput={setChatInput}
+          onSend={sendChat}
+          disableSubmit={disableChat}
+        />
+      </div>
+
+      <div className="pt-16">
+        <Stage
+          width={window.innerWidth}
+          height={window.innerHeight - 64}
+          onMouseDown={handleMouseDown}
+          onMousemove={handleMouseMove}
+          onMouseup={handleMouseUp}
+        >
+          <Layer>
+            {lines.map((line, i) => (
+              <Line
+                key={i}
+                points={line.points}
+                stroke={line.tool === 'eraser' ? 'white' : line.stroke}
+                strokeWidth={line.strokeWidth}
+                tension={0.5}
+                lineCap="round"
+                globalCompositeOperation={line.tool === 'eraser' ? 'destination-out' : 'source-over'}
+              />
+            ))}
+          </Layer>
+        </Stage>
+      </div>
     </div>
   );
 }
