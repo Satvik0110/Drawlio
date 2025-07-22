@@ -7,7 +7,7 @@ import ChatBox from '../components/ChatBox';
 export default function DrawingCanvas() {
   const {socket, connected, roomID, name} = useContext(SocketContext); 
   const [lines, setLines] = useState([]);
-  const [color, setColor] = useState('black');
+  const [color, setColor] = useState('#000000');
   const [tool, setTool] = useState('brush'); // or 'eraser'
   const [isDrawer, setDrawer]= useState(false);
   const [isHost, setHost]=useState(false);

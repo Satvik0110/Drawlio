@@ -1,4 +1,3 @@
-//make private fields.
 class Room{
     players=[];
     lines=[];
