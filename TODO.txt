@@ -1,10 +1,9 @@
-2.handle proper auth for accessing /game.
-10.if drawer disconnects...handle and switch drawer to next
-14. early stop round on everyone guessing
-15. correct error codes.
-start if not sufficient, check on frontend only maybe...
-joining, creating errors on frontend display instead of logging
-trim at start and end of room code adn name and all
-
-Add Project name DrawInk
-points below the members list
+1.handle proper auth for accessing /game.
+2.if drawer disconnects...handle and switch drawer to next
+3. early stop round on everyone guessing
+4. correct error codes on backend.
+5. start if not sufficient members -> check on frontend only...
+6.joining, creating errors on frontend display instead of logging
+7.trim at start and end of room code and name for covnenience
+8.Add Project name DrawInk
+9.points below the members list?

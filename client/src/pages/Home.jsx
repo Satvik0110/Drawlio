@@ -1,9 +1,9 @@
 import { useState, useContext } from "react";
 import { SocketContext } from "../SocketProvider";
 import axios from "axios";
-import { z } from 'zod'; // Step 1: Import Zod
+import { z } from 'zod'; 
 
-// --- Zod Schemas for Validation (Updated Rules) ---
+//Zod Schemas for Validation
 const createRoomSchema = z.object({
   username: z.string().min(3, { message: "Name must be at least 3 characters" }),
   players: z.coerce.number().min(2, { message: "Players must be between 2 and 10" }).max(10, { message: "Players must be between 2 and 10" }),
@@ -18,19 +18,15 @@ const joinRoomSchema = z.object({
 
 
 const Home = () => {
-    // --- ORIGINAL STATE FROM YOUR CODE ---
     const [username, setUsername] = useState('');
     const [players, setPlayers] = useState('');
     const [timer, setTimer] = useState('');
     const [code, setCode] = useState('');
     const [rounds, setRounds] = useState('');
     const { socket, setroomID, setName } = useContext(SocketContext);
-
-    // --- NEW STATE FOR UI AND ERRORS ---
     const [activeMenu, setActiveMenu] = useState('create');
     const [errors, setErrors] = useState({});
 
-    // --- ORIGINAL LOGIC FROM YOUR CODE ---
     const connectToSocket = (id) => {
         if (!socket.connected) {
             socket.connect();
@@ -44,20 +40,17 @@ const Home = () => {
         e.preventDefault();
         setErrors({}); // Clear previous errors
 
-        // --- ZOD VALIDATION ADDED (with Fixed Error Handling) ---
         const validationResult = createRoomSchema.safeParse({ username, players, rounds, timer });
         if (!validationResult.success) {
-            // Use .flatten() to get a simple object of errors
+
             const fieldErrors = validationResult.error.flatten().fieldErrors;
             const newErrors = {};
             for (const key in fieldErrors) {
                 newErrors[key] = fieldErrors[key][0]; // Get the first error message for each field
             }
             setErrors(newErrors);
-            return; // Stop if validation fails
+            return; 
         }
-
-        // --- ORIGINAL LOGIC CONTINUES IF VALIDATION PASSES ---
         try {
             const response = await axios.post('http://localhost:4000/create-room', { numRounds: validationResult.data.rounds, timer: validationResult.data.timer, maxPlayers: validationResult.data.players });
             console.log(response);
@@ -69,22 +62,18 @@ const Home = () => {
 
     const joinRoom = async (e) => {
         e.preventDefault();
-        setErrors({}); // Clear previous errors
+        setErrors({}); 
 
-        // --- ZOD VALIDATION ADDED (with Fixed Error Handling) ---
         const validationResult = joinRoomSchema.safeParse({ username, code });
         if (!validationResult.success) {
-            // Use .flatten() to get a simple object of errors
             const fieldErrors = validationResult.error.flatten().fieldErrors;
             const newErrors = {};
             for (const key in fieldErrors) {
                 newErrors[key] = fieldErrors[key][0]; // Get the first error message for each field
             }
             setErrors(newErrors);
-            return; // Stop if validation fails
+            return;
         }
-
-        // --- ORIGINAL LOGIC CONTINUES IF VALIDATION PASSES ---
         try {
             const response = await axios.post('http://localhost:4000/join-room', { id: validationResult.data.code });
             console.log(response);
@@ -94,12 +83,10 @@ const Home = () => {
         }
     };
 
-    // --- NEW STYLED RENDER LOGIC ---
     return (
         <div className="bg-gradient-to-br from-gray-900 to-indigo-900 text-white min-h-screen flex items-center justify-center font-sans p-4">
             <div className="w-full max-w-md mx-auto">
                 <div className="bg-gray-800 rounded-2xl shadow-2xl overflow-hidden ring-1 ring-white/10">
-                    {/* Header with toggle buttons */}
                     <div className="flex">
                         <button onClick={() => { setActiveMenu('create'); setErrors({}); }} className={`w-1/2 p-4 text-lg font-bold focus:outline-none transition-colors duration-300 ${activeMenu === 'create' ? 'bg-indigo-600' : 'bg-gray-700 hover:bg-gray-600'}`}>
                             Create Game
@@ -109,9 +96,7 @@ const Home = () => {
                         </button>
                     </div>
 
-                    {/* Sliding Form Container */}
                     <div className="relative h-[420px]">
-                        {/* Create Room Form */}
                         <div className={`absolute top-0 left-0 w-full transition-transform duration-500 ease-in-out ${activeMenu === 'create' ? 'transform translate-x-0' : 'transform -translate-x-full'}`}>
                             <form className="p-8 space-y-4" onSubmit={createRoom} noValidate>
                                 <InputField placeholder="Your Name" value={username} onChange={(e) => setUsername(e.target.value)} error={errors.username} />
@@ -128,7 +113,6 @@ const Home = () => {
                             </form>
                         </div>
 
-                        {/* Join Room Form */}
                         <div className={`absolute top-0 left-0 w-full transition-transform duration-500 ease-in-out ${activeMenu === 'join' ? 'transform translate-x-0' : 'transform translate-x-full'}`}>
                             <form className="p-8 space-y-4" onSubmit={joinRoom} noValidate>
                                 <InputField placeholder="Your Name" value={username} onChange={(e) => setUsername(e.target.value)} error={errors.username} />
