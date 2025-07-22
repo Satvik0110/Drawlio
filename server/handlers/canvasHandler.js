@@ -1,3 +1,4 @@
+//handles events related to frontend drawing
 module.exports = (socket, io, rooms) => {
     socket.on('get-initial-lines', () => {
         socket.emit('initial-lines', rooms[socket.roomID].getLines());

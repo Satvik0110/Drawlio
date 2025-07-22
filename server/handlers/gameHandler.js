@@ -1,3 +1,5 @@
+//hadnles core game logic of selecting words, switching turns, guessing logic, points etc
+
 const generateWords = require('../utils/generateWords');
 
 module.exports = (socket, io, rooms) => {

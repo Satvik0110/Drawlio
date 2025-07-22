@@ -21,9 +21,10 @@ let rooms = {};
 require('./handlers/socketHandlers')(io, rooms);
 
 app.get('/', (req, res) => {
-    res.json({ message: "Hello world!" });
+    res.status(200).json({ message: "Server Testing Endpoint" });
 });
 
+//route to create room and join as host.
 app.post('/create-room', (req, res) => {
     const { numRounds, timer, maxPlayers } = req.body;
     console.log(numRounds, timer, maxPlayers);
@@ -37,6 +38,7 @@ app.post('/create-room', (req, res) => {
     return res.status(201).json({ code: roomID });
 })
 
+//route to try and join room
 app.post('/join-room', (req, res) => {
     const { id } = req.body;
     if (!id || !rooms[id]) return res.status(400).json({ msg: 'Room not found!' });

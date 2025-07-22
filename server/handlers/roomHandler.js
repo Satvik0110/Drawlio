@@ -1,3 +1,4 @@
+//handles room joining and disconnecting
 module.exports = (socket, io, rooms) => {
     socket.on('join-room', (data) => {
         const { roomID, name } = data;

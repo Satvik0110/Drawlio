@@ -19,7 +19,7 @@ class Room{
         this.maxPlayers=maxPlayers;
         this.numRounds=numRounds;
     }
-
+    //player joining if not already in
     addPlayer(socketid){
         if(!this.players.includes(socketid)){
             this.players.push(socketid);
@@ -35,61 +35,63 @@ class Room{
         return false;
     }
    
-
+    //returns hsot id
     getHostID(){
         return this.host;
     }
+    //returns room id
     getRoomID(){
         return this.roomID;
     }
-
+    //returns current state of canvas
     getLines(){
         return this.lines;
     }
-
+    //update lines
     setLines(lastLine){
         this.lines.push(lastLine);
     }
-
+    //clear
     clearLines(){
         this.lines=[];
     }
-    
+    //remove player and delete room if empty
     deletePlayer(socketid){
         this.players=players.filter(id => id!==socketid)
         delete points[socketid];
         delete pointsThisRd[socketid];
         return this.players.length==0;
     }
-
+    //check if members enough to start game
     checkSufficientMembers(){
         return this.players.length==this.maxPlayers;
     }
-
+    //return drawerr index
     getDrawerIndex(){
         return this.drawerIndex;
-    }
+    } 
+    //return drawer socket id
      getDrawerID(){
         return this.players[this.drawerIndex];
     }
-
+    //sets word, starts timer
     roundStart(word){
         this.currentWord=word;
         this.startTime=Date.now();
         return [this.players[this.drawerIndex], this.timer];
     }
-
+    //number of people who guessed successfully
     getGuessed(){
         return this.guessed;
     }
-
+    //update drawer points after round end
     handleRoundEnd(points){
         const drawerID= this.players[this.drawerIndex];
         this.points[drawerID]+=points;
         this.pointsThisRd[drawerID]+=points;
         return [this.points, this.pointsThisRd];
     }
-
+    //update params for next round
     prepareNextRound(){
         this.round++;
         this.drawerIndex= (this.drawerIndex+1) % this.players.length;
@@ -105,10 +107,11 @@ class Room{
         }
         return false;
     }
-
+    //return defined timer
     getTimer(){
         return this.timer;
     }
+    //checks if user guess correct and allots points accirdingly
     checkGuess(msg, socketid){
          // Check for correct guess (case-insensitive)
         if (this.currentWord && msg.trim().toLowerCase() === this.currentWord.trim().toLowerCase()) {
