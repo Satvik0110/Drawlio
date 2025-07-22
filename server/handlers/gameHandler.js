@@ -31,7 +31,7 @@ module.exports = (socket, io, rooms) => {
                 points,
             });
             if (room.prepareNextRound()) {
-                io.to(socket.roomID).emit('game-over');
+                io.to(socket.roomID).emit('game-over',{points});
             } else {
                 const words = generateWords();
                 io.to(socket.roomID).emit('choose-word', { words, drawerID: room.getDrawerID() });

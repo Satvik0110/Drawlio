@@ -1,5 +1,5 @@
 class Room{
-    players=[];
+    players={};
     lines=[];
     drawerIndex=0;
     host=null;
@@ -20,18 +20,16 @@ class Room{
         this.numRounds=numRounds;
     }
     //player joining if not already in
-    addPlayer(socketid){
-        if(!this.players.includes(socketid)){
-            this.players.push(socketid);
+    addPlayer(socketid, name){
+        if(!this.players[socketid]){
+            this.players[socketid]=name;
             this.points[socketid]=0;
             this.pointsThisRd[socketid]=0;
             if(!this.host) this.host=socketid;
-            this.points[socketid]=0;
-            this.pointsThisRd[socketid]=0;
             return true;
         }
         //for debugging
-        console.log(this.players.length);
+        console.log(Object.keys(this.players).length);
         return false;
     }
    
@@ -57,14 +55,14 @@ class Room{
     }
     //remove player and delete room if empty
     deletePlayer(socketid){
-        this.players=players.filter(id => id!==socketid)
-        delete points[socketid];
-        delete pointsThisRd[socketid];
-        return this.players.length==0;
+        delete this.players[socketid];
+        delete this.points[socketid];
+        delete this.pointsThisRd[socketid];
+        return Object.keys(this.players).length === 0;
     }
     //check if members enough to start game
     checkSufficientMembers(){
-        return this.players.length==this.maxPlayers;
+        return  Object.keys(this.players).length === this.maxPlayers;
     }
     //return drawerr index
     getDrawerIndex(){
@@ -72,13 +70,15 @@ class Room{
     } 
     //return drawer socket id
      getDrawerID(){
-        return this.players[this.drawerIndex];
+        const playerIDs = Object.keys(this.players);
+        return playerIDs[this.drawerIndex];
     }
     //sets word, starts timer
     roundStart(word){
         this.currentWord=word;
         this.startTime=Date.now();
-        return [this.players[this.drawerIndex], this.timer];
+        const drawerID = this.getDrawerID();
+        return [drawerID, this.timer];
     }
     //number of people who guessed successfully
     getGuessed(){
@@ -86,7 +86,7 @@ class Room{
     }
     //update drawer points after round end
     handleRoundEnd(points){
-        const drawerID= this.players[this.drawerIndex];
+        const drawerID= this.getDrawerID();
         this.points[drawerID]+=points;
         this.pointsThisRd[drawerID]+=points;
         return [this.points, this.pointsThisRd];
@@ -94,7 +94,7 @@ class Room{
     //update params for next round
     prepareNextRound(){
         this.round++;
-        this.drawerIndex= (this.drawerIndex+1) % this.players.length;
+        this.drawerIndex= (this.drawerIndex+1) % Object.keys(this.players).length;
         this.lines=[];
         this.guessed=0;
         for (let key in this.pointsThisRd) this.pointsThisRd[key] = 0;
@@ -124,6 +124,9 @@ class Room{
             return [true, this.pointsThisRd];
         }
         return [false,this.pointsThisRd];
+    }
+    getPlayers(){
+        return this.players;
     }
 }
 
