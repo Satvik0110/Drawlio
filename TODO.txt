@@ -1,5 +1,8 @@
 //Disconnect edge case handle..
 1.if drawer disconnects...handle and switch drawer to next
 
+//UI
+1. responsive check on phone..drawing is ont possible due to very limited drawing area
 Misc
-2. MAke ReadME
+1. MAke ReadME
+2. Proper Docker files
