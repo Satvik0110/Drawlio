@@ -8,10 +8,14 @@ const server = http.createServer(app);
 const generateRoomID = require('./utils/generateRoomID');
 const Room = require('./models/Room');
 
-app.use(cors());
+const allowedOrigin = process.env.FRONTEND_URL;
+app.use(cors({
+    origin: allowedOrigin,
+}));
 const io = require('socket.io')(server, {
     cors: {
-        origin: "*",
+        origin: allowedOrigin,
+        methods: ["GET", "POST"],
     }
 });
 app.use(express.json());
