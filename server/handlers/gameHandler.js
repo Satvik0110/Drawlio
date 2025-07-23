@@ -2,6 +2,29 @@
 
 const generateWords = require('../utils/generateWords');
 
+function endRound(roomID, rooms, io) {
+    const room = rooms[roomID];
+    if (!room) return;
+    
+    const drawerPoints = room.getGuessed() * 50;
+    const [points, pointsThisRd] = room.handleRoundEnd(drawerPoints);
+
+    io.to(roomID).emit('round-results', {
+        pointsThisRd,
+        points,
+    });
+    io.to(roomID).emit('turn-over');
+    
+    if (room.checkRounds()) {
+        io.to(roomID).emit('game-over', points);
+        room.prepareNextRound();
+    } else {
+        room.prepareNextRound();
+        const words = generateWords();
+        io.to(roomID).emit('choose-word', { words, drawerID: room.getDrawerID() });
+    }
+}
+
 module.exports = (socket, io, rooms) => {
     socket.on('start-game', () => {
         const room = rooms[socket.roomID];
@@ -33,7 +56,8 @@ module.exports = (socket, io, rooms) => {
         const check = room.checkGuess(msg, socket.id);
 
         if (check[0]) {
-            io.to(socket.roomID).emit('chat-message', { name: socket.name, msg: 'guessed the word!', correct: true, points: check[1] });
+           
+            socket.emit('chat-message', { name: socket.name, msg: 'guessed the word!', correct: true, points: check[1] });
             if (room.checkAllGuessed()) {
                 console.log('All players guessed! Ending round early.');
                 clearTimeout(room.getRoundTimeout());
@@ -44,26 +68,4 @@ module.exports = (socket, io, rooms) => {
         }
     });
 };
-
-function endRound(roomID, rooms, io) {
-    const room = rooms[roomID];
-    if (!room) return;
-    
-    const drawerPoints = room.getGuessed() * 50;
-    const [points, pointsThisRd] = room.handleRoundEnd(drawerPoints);
-
-    io.to(roomID).emit('round-results', {
-        pointsThisRd,
-        points,
-    });
-    io.to(roomID).emit('turn-over');
-    
-    if (room.checkRounds()) {
-        io.to(roomID).emit('game-over', points);
-        room.prepareNextRound();
-    } else {
-        room.prepareNextRound();
-        const words = generateWords();
-        io.to(roomID).emit('choose-word', { words, drawerID: room.getDrawerID() });
-    }
-}
+module.exports.endRound = endRound;

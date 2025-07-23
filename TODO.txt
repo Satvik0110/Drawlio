@@ -1,8 +1,6 @@
-//Disconnect logic..
+//Disconnect edge case handle..
 1.if drawer disconnects...handle and switch drawer to next
-2. if host disconnects then..reassign host/end game.
 
 Misc
 1. Deploy
 2. MAke ReadME
-3.env for frontend with backend url

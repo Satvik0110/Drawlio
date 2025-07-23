@@ -147,6 +147,11 @@ class Room{
         const totalPlayers = Object.keys(this.players).length;
         return this.guessed === totalPlayers - 1;
     }
+    switchHost() {
+        const playerIDs = Object.keys(this.players);
+        this.host = playerIDs[0];
+        return this.host;
+    }
 }
 
 module.exports= Room;

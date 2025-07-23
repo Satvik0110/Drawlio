@@ -132,12 +132,23 @@ export default function DrawingCanvas() {
   socket.on('disconnect-user', (id)=>{
     console.log(`${players[id]} disconnected`);
     setPlayers(prev => Object.fromEntries(Object.entries(prev).filter(([key, _]) => key !== id)));
+    setPlayerPoints(prev => Object.fromEntries(Object.entries(prev).filter(([key, _]) => key !== id)));
   })
   socket.on('insufficient-members', ()=>{
     setshowButton(true);
     setShowInsufficientError(true);
     setTimeout(() => setShowInsufficientError(false), 3000);
-  })
+  });
+  socket.on('new-host', (id)=>{
+    setHost(id);
+    if(!currentDrawer) setshowButton(true);
+    else setshowButton(false);
+  });
+  socket.on('drawer-disconnected', () => {
+  setCurrentDrawer(null);
+  setDrawer(false);
+  setdisplayWord(null);
+});
            
     return ()=>{
       if (timerInterval.current) {
@@ -155,6 +166,9 @@ export default function DrawingCanvas() {
       socket.off('chat-message');
       socket.off('round-results');
       socket.off('disconnect-user');
+      socket.off('insufficient-members');
+      socket.off('new-host');
+      socket.off('drawer-disconnected');
     };
   },[connected, roomID, resultsData]);
 
@@ -242,7 +256,7 @@ const sendChat = (e) => {
         </div>
       </div>
 
-      <div className="absolute top-20 right-4 bg-white rounded-lg shadow-lg p-4 z-20 w-64">
+      <div className="absolute top-20 right-4 bg-white rounded-lg shadow-lg p-4 z-30 w-64">
         <h3 className="text-lg font-semibold text-gray-800 mb-3 text-center border-b pb-2">
           Players ({Object.keys(players).length})
         </h3>
