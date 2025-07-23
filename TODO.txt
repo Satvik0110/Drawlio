@@ -2,5 +2,4 @@
 1.if drawer disconnects...handle and switch drawer to next
 
 Misc
-1. Deploy
 2. MAke ReadME
