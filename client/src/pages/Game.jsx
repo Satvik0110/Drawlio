@@ -234,7 +234,7 @@ const sendChat = (e) => {
             )}
             
             {displayWord && (
-              <div className="bg-blue-100 text-blue-800 px-4 py-2 rounded-lg font-mono text-lg">
+              <div className="bg-blue-100 text-blue-800 px-4 py-2 rounded-lg font-mono text-lg  whitespace-pre">
                 {displayWord}
               </div>
             )}

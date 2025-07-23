@@ -53,7 +53,7 @@ const Home = () => {
             return; 
         }
         try {
-            const response = await axios.post('http://localhost:4000/create-room', { numRounds: validationResult.data.rounds, timer: validationResult.data.timer, maxPlayers: validationResult.data.players });
+            const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/create-room`, { numRounds: validationResult.data.rounds, timer: validationResult.data.timer, maxPlayers: validationResult.data.players });
             console.log(response);
             connectToSocket(response.data.code);
         } catch (error) {
@@ -77,7 +77,7 @@ const Home = () => {
             return;
         }
         try {
-            const response = await axios.post('http://localhost:4000/join-room', { id: validationResult.data.code.trim().toUpperCase()});
+            const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/join-room`, { id: validationResult.data.code.trim().toUpperCase()});
             console.log(response);
             connectToSocket(validationResult.data.code.trim().toUpperCase());
         } catch (error) {
