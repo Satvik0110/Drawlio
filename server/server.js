@@ -28,7 +28,7 @@ app.get('/', (req, res) => {
 app.post('/create-room', (req, res) => {
     const { numRounds, timer, maxPlayers } = req.body;
     console.log(numRounds, timer, maxPlayers);
-    if (!numRounds || !timer || !maxPlayers) res.status(401).json({ status: 'false' });
+    if (!numRounds || !timer || !maxPlayers) res.status(400).json({ status: 'false' });
 
     let roomID;
     do {
@@ -41,7 +41,7 @@ app.post('/create-room', (req, res) => {
 //route to try and join room
 app.post('/join-room', (req, res) => {
     const { id } = req.body;
-    if (!id || !rooms[id]) return res.status(400).json({ msg: 'Room not found!' });
+    if (!id || !rooms[id]) return res.status(404).json({ msg: 'Room not found!' });
     else if (rooms[id].checkSufficientMembers()) return res.status(400).json({ msg: 'Room full' });
     return res.status(200).json({ msg: 'success' });
 

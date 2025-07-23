@@ -26,6 +26,7 @@ const Home = () => {
     const { socket, setroomID, setName } = useContext(SocketContext);
     const [activeMenu, setActiveMenu] = useState('create');
     const [errors, setErrors] = useState({});
+    const [serverError, setServerError] = useState('');
 
     const connectToSocket = (id) => {
         if (!socket.connected) {
@@ -38,7 +39,7 @@ const Home = () => {
 
     const createRoom = async (e) => {
         e.preventDefault();
-        setErrors({}); // Clear previous errors
+        setErrors({});
 
         const validationResult = createRoomSchema.safeParse({ username, players, rounds, timer });
         if (!validationResult.success) {
@@ -46,7 +47,7 @@ const Home = () => {
             const fieldErrors = validationResult.error.flatten().fieldErrors;
             const newErrors = {};
             for (const key in fieldErrors) {
-                newErrors[key] = fieldErrors[key][0]; // Get the first error message for each field
+                newErrors[key] = fieldErrors[key][0];
             }
             setErrors(newErrors);
             return; 
@@ -56,7 +57,8 @@ const Home = () => {
             console.log(response);
             connectToSocket(response.data.code);
         } catch (error) {
-            console.log(error);
+            setServerError('Could not create room, please try again');
+            setTimeout(() => setServerError(''), 5000);
         }
     };
 
@@ -69,23 +71,29 @@ const Home = () => {
             const fieldErrors = validationResult.error.flatten().fieldErrors;
             const newErrors = {};
             for (const key in fieldErrors) {
-                newErrors[key] = fieldErrors[key][0]; // Get the first error message for each field
+                newErrors[key] = fieldErrors[key][0];
             }
             setErrors(newErrors);
             return;
         }
         try {
-            const response = await axios.post('http://localhost:4000/join-room', { id: validationResult.data.code });
+            const response = await axios.post('http://localhost:4000/join-room', { id: validationResult.data.code.trim().toUpperCase()});
             console.log(response);
-            connectToSocket(validationResult.data.code);
+            connectToSocket(validationResult.data.code.trim().toUpperCase());
         } catch (error) {
-            console.log(error);
+            setServerError('Invalid Room ID');
+            setTimeout(() => setServerError(''), 5000);
         }
     };
 
     return (
         <div className="bg-gradient-to-br from-gray-900 to-indigo-900 text-white min-h-screen flex items-center justify-center font-sans p-4">
             <div className="w-full max-w-md mx-auto">
+                <div className="text-center mb-8">
+                    <h1 className="text-5xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                        Drawlio
+                    </h1>
+                </div>
                 <div className="bg-gray-800 rounded-2xl shadow-2xl overflow-hidden ring-1 ring-white/10">
                     <div className="flex">
                         <button onClick={() => { setActiveMenu('create'); setErrors({}); }} className={`w-1/2 p-4 text-lg font-bold focus:outline-none transition-colors duration-300 ${activeMenu === 'create' ? 'bg-indigo-600' : 'bg-gray-700 hover:bg-gray-600'}`}>
@@ -105,6 +113,7 @@ const Home = () => {
                                     <div className="w-1/2"><InputField type="number" placeholder="Rounds (2-15)" value={rounds} onChange={(e) => setRounds(e.target.value)} error={errors.rounds} /></div>
                                 </div>
                                 <InputField type="number" placeholder="Timer (30-180s)" value={timer} onChange={(e) => setTimer(e.target.value)} error={errors.timer} />
+                                {serverError && <p className="text-red-400 text-sm">{serverError}</p>}
                                 <div className="pt-2">
                                 <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition-transform duration-200 transform hover:-translate-y-1 shadow-lg shadow-indigo-600/50">
                                     Create & Start
@@ -117,6 +126,7 @@ const Home = () => {
                             <form className="p-8 space-y-4" onSubmit={joinRoom} noValidate>
                                 <InputField placeholder="Your Name" value={username} onChange={(e) => setUsername(e.target.value)} error={errors.username} />
                                 <InputField placeholder="Enter Room Code" value={code} onChange={(e) => setCode(e.target.value)} error={errors.code} />
+                                {serverError && <p className="text-red-400 text-sm">{serverError}</p>}
                                 <div className="pt-2">
                                 <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition-transform duration-200 transform hover:-translate-y-1 shadow-lg shadow-indigo-600/50">
                                     Join
@@ -131,7 +141,6 @@ const Home = () => {
     );
 };
 
-// A helper component to reduce repetition for input fields
 const InputField = ({ label, error, ...props }) => (
     <div className="h-20">
         <label className="block text-sm font-medium text-gray-400">{label}</label>

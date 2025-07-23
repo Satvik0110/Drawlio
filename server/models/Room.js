@@ -12,6 +12,7 @@ class Room{
     pointsThisRd={};
     guessed= 0; 
     startTime=null;
+    roundTimeoutId=null;
 
     constructor(roomID, timer,maxPlayers,numRounds){
         this.roomID=roomID;
@@ -97,6 +98,7 @@ class Room{
         this.drawerIndex= (this.drawerIndex+1) % Object.keys(this.players).length;
         this.lines=[];
         this.guessed=0;
+        this.roundTimeoutId=null;
         for (let key in this.pointsThisRd) this.pointsThisRd[key] = 0;
         if(this.round>= this.numRounds){
             this.round=0;
@@ -128,8 +130,22 @@ class Room{
         }
         return [false,this.pointsThisRd];
     }
+
     getPlayers(){
         return this.players;
+    }
+
+    setRoundTimeout(timeoutId) {
+        this.roundTimeoutId=timeoutId;
+    }
+
+    getRoundTimeout() {
+        return this.roundTimeoutId;
+    }
+
+    checkAllGuessed() {
+        const totalPlayers = Object.keys(this.players).length;
+        return this.guessed === totalPlayers - 1;
     }
 }
 

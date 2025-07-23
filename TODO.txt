@@ -1,9 +1,8 @@
-1.handle proper auth for accessing /game.
-2.if drawer disconnects...handle and switch drawer to next
-3. early stop round on everyone guessing
-4. correct error codes on backend.
-5. start if not sufficient members -> check on frontend only...
-6.joining, creating errors on frontend display instead of logging
-7.trim at start and end of room code and name for covnenience
-8.Add Project name DrawInk
-9.points below the members list?
+//Disconnect logic..
+1.if drawer disconnects...handle and switch drawer to next
+2. if host disconnects then..reassign host/end game.
+
+Misc
+1. Deploy
+2. MAke ReadME
+3.env for frontend with backend url

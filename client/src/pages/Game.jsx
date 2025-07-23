@@ -26,6 +26,8 @@ export default function DrawingCanvas() {
   const [winnerData, setWinnerData] = useState(null);
   const [currentDrawer, setCurrentDrawer] = useState(null);
   const [players, setPlayers]= useState({});
+  const [playerPoints, setPlayerPoints] = useState({});
+  const [showInsufficientError, setShowInsufficientError] = useState(false);
   const timerInterval = useRef(null);
 
   useEffect(()=>{
@@ -65,7 +67,7 @@ export default function DrawingCanvas() {
             setdisableChat(false);
             setCurrentDrawer(null);
             setTimer(null);
-            // const pointsToUse = finalResults?.points || resultsData?.points || {};
+            setPlayerPoints(points);
             const entries = Object.entries(points);
             const winner = entries.sort((a, b) => b[1] - a[1])[0];
             console.log(points);
@@ -74,6 +76,7 @@ export default function DrawingCanvas() {
             setWinnerData(winner);
             setShowWinner(true);
             setTimeout(() => setShowWinner(false), 10000);
+            setPlayerPoints({});
           });
           socket.on('choose-word', (data)=>{
               const {words, drawerID}= data;
@@ -122,12 +125,18 @@ export default function DrawingCanvas() {
 
    socket.on('round-results', (data) => {
     setResultsData(data);
+    setPlayerPoints(data.points);
     setShowResults(true);
     setTimeout(() => setShowResults(false), 4000);
   });
   socket.on('disconnect-user', (id)=>{
     console.log(`${players[id]} disconnected`);
-   setPlayers(prev => prev.filter(player => player.id!==id));
+    setPlayers(prev => Object.fromEntries(Object.entries(prev).filter(([key, _]) => key !== id)));
+  })
+  socket.on('insufficient-members', ()=>{
+    setshowButton(true);
+    setShowInsufficientError(true);
+    setTimeout(() => setShowInsufficientError(false), 3000);
   })
            
     return ()=>{
@@ -204,6 +213,9 @@ const sendChat = (e) => {
       <div className="absolute top-0 left-0 right-0 bg-white shadow-md z-30 px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
+            <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Drawlio
+            </div>
             <div className="text-lg font-semibold text-gray-700">Hi {name}</div>
             <div className="text-sm text-gray-500">Room: {roomID}</div>
           </div>
@@ -248,22 +260,29 @@ const sendChat = (e) => {
                 <div className={`w-3 h-3 rounded-full ${
                   socketId === currentDrawer ? 'bg-green-500' : 'bg-gray-400'
                 }`}></div>
-                <span className={`font-medium ${
-                  socketId === socket.id ? 'text-blue-700' : 'text-gray-700'
-                }`}>
-                  {socketId === socket.id ? `${playerName} (You)` : playerName}
-                </span>
+                <div className="flex flex-col">
+                  <span className={`font-medium ${
+                    socketId === socket.id ? 'text-blue-700' : 'text-gray-700'
+                  }`}>
+                    {socketId === socket.id ? `${playerName} (You)` : playerName}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {playerPoints[socketId] || 0} pts
+                  </span>
+                </div>
               </div>
-              {socketId === currentDrawer && (
-                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                  Drawing
-                </span>
-              )}
-              {Host===socketId && (
-                <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">
-                  Host
-                </span>
-              )}
+              <div className="flex flex-col items-end space-y-1">
+                {socketId === currentDrawer && (
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                    Drawing
+                  </span>
+                )}
+                {Host===socketId && (
+                  <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">
+                    Host
+                  </span>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -271,12 +290,19 @@ const sendChat = (e) => {
       
       {Host===socket.id && showButton && (
         <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20">
-          <button
-            onClick={startGame}
-            className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg text-xl font-semibold shadow-lg transition-colors"
-          >
-            START GAME
-          </button>
+          <div className="flex flex-col items-center">
+            <button
+              onClick={startGame}
+              className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg text-xl font-semibold shadow-lg transition-colors"
+            >
+              START GAME
+            </button>
+            {showInsufficientError && (
+              <div className="mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded">
+                Insufficient members cannot start
+              </div>
+            )}
+          </div>
         </div>
       )}
 
