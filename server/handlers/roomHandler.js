@@ -17,14 +17,17 @@ module.exports = (socket, io, rooms) => {
         const room=rooms[socket.roomID];
         if(!room) return;
 
-        if (socket.id===room.getDrawerID() && room.getRoundTimeout()) {
-            clearTimeout(room.getRoundTimeout());
+        if (socket.id===room.getDrawerID()) {
+            if(room.getRoundTimeout()) clearTimeout(room.getRoundTimeout());
             io.to(socket.roomID).emit('drawer-disconnected')
-            endRound(socket.roomID, rooms, io);
         }
-        const wasHost = socket.id === room.getHostID();
 
+        const wasHost = socket.id === room.getHostID();
+        
+        room.round=100;
+        endRound(socket.roomID, rooms, io);
         socket.to(socket.roomID).emit('disconnect-user', socket.id);
+        
         if (rooms[socket.roomID].deletePlayer(socket.id)) {
             console.log('Empty room...deleting');
             delete rooms[socket.roomID];
