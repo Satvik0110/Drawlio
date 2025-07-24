@@ -63,6 +63,8 @@ class Room{
     }
     //check if members enough to start game
     checkSufficientMembers(){
+        console.log(Object.keys(this.players).length);
+        console.log(this.maxPlayers);
         return  Object.keys(this.players).length === this.maxPlayers;
     }
     //return drawerr index

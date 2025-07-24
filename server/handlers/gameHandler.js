@@ -2,7 +2,7 @@
 
 const generateWords = require('../utils/generateWords');
 
-function endRound(roomID, rooms, io) {
+function endRound(roomID, rooms, io, id=null) {
     const room = rooms[roomID];
     if (!room) return;
     
@@ -14,9 +14,9 @@ function endRound(roomID, rooms, io) {
         points,
     });
     io.to(roomID).emit('turn-over');
-    
+    console.log(id);
     if (room.checkRounds()) {
-        io.to(roomID).emit('game-over', points);
+        io.to(roomID).emit('game-over', points, id);
         room.prepareNextRound();
     } else {
         room.prepareNextRound();
@@ -29,12 +29,14 @@ module.exports = (socket, io, rooms) => {
     socket.on('start-game', () => {
         const room = rooms[socket.roomID];
         if (!room.checkSufficientMembers()) {
+            
             console.log('Insufficient members');
             socket.emit('insufficient-members');
             return;
+        }else{
+            const words = generateWords();
+            io.to(socket.roomID).emit('choose-word', { words, drawerID: room.getDrawerID() });
         }
-        const words = generateWords();
-        io.to(socket.roomID).emit('choose-word', { words, drawerID: room.getDrawerID() });
     });
 
     socket.on('word-chosen', (word) => {
@@ -57,7 +59,7 @@ module.exports = (socket, io, rooms) => {
 
         if (check[0]) {
            
-            socket.emit('chat-message', { name: socket.name, msg: 'guessed the word!', correct: true, points: check[1] });
+            io.to(socket.roomID).emit('chat-message', { name: socket.name, msg: 'guessed the word!', correct: true, points: check[1], id:socket.id });
             if (room.checkAllGuessed()) {
                 console.log('All players guessed! Ending round early.');
                 clearTimeout(room.getRoundTimeout());
