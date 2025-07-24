@@ -119,7 +119,7 @@ export default function DrawingCanvas() {
           });
           socket.on('chat-message', (data) => {
     console.log(data);
-    if(data.correct) setdisableChat(true);
+    if(data.correct && data.id===socket.id) setdisableChat(true);
     setChatMessages(prev => [...prev, data]);
   });
 

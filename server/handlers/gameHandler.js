@@ -57,7 +57,7 @@ module.exports = (socket, io, rooms) => {
 
         if (check[0]) {
            
-            socket.emit('chat-message', { name: socket.name, msg: 'guessed the word!', correct: true, points: check[1] });
+            socket.emit('chat-message', { name: socket.name, msg: 'guessed the word!', correct: true, points: check[1], id:socket.id });
             if (room.checkAllGuessed()) {
                 console.log('All players guessed! Ending round early.');
                 clearTimeout(room.getRoundTimeout());
