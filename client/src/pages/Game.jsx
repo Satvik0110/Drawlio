@@ -222,6 +222,43 @@ const sendChat = (e) => {
     isDrawing.current = false;
   };
 
+  const handleTouchStart = (e) => {
+  if(!isDrawer) return;
+  e.evt.preventDefault();
+  isDrawing.current = true;
+  const touch = e.evt.touches[0];
+  const stage = e.target.getStage();
+  const pos = stage.getPointerPosition();
+  setLines([...lines, {
+    tool,
+    stroke: color,
+    strokeWidth: tool === 'eraser' ? 20 : 4,
+    points: [pos.x, pos.y],
+  }]);
+};
+
+const handleTouchMove = (e) => {
+  if (!isDrawing.current || !isDrawer) return;
+  e.evt.preventDefault();
+  const stage = e.target.getStage();
+  const point = stage.getPointerPosition();
+  const lastLine = lines[lines.length - 1];
+  const newPoints = lastLine.points.concat([point.x, point.y]);
+  const updatedLine = {
+    ...lastLine,
+    points: newPoints,
+  };
+  const updatedLines = [...lines.slice(0, -1), updatedLine];
+  setLines(updatedLines);
+
+  if (connected) socket.emit('drawing', { lastLine: updatedLine, roomID });
+};
+
+const handleTouchEnd = (e) => {
+  e.evt.preventDefault();
+  isDrawing.current = false;
+};
+
   const handleClear = () => {
     if (connected) socket.emit('clear', {roomID});
   };
@@ -461,6 +498,9 @@ const sendChat = (e) => {
           onMouseDown={handleMouseDown}
           onMousemove={handleMouseMove}
           onMouseup={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
           <Layer>
             {lines.map((line, i) => (
