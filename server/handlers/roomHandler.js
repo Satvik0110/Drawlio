@@ -24,9 +24,9 @@ module.exports = (socket, io, rooms) => {
 
         const wasHost = socket.id === room.getHostID();
         
-        room.round=100;
-        endRound(socket.roomID, rooms, io);
-        socket.to(socket.roomID).emit('disconnect-user', socket.id);
+        room.round=room.numRounds;
+        endRound(socket.roomID, rooms, io, socket.id);
+        // socket.to(socket.roomID).emit('disconnect-user', socket.id);
         
         if (rooms[socket.roomID].deletePlayer(socket.id)) {
             console.log('Empty room...deleting');
