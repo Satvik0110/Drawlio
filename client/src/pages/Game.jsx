@@ -31,6 +31,7 @@ export default function DrawingCanvas() {
   const timerInterval = useRef(null);
   const [showDisconnectMessage, setShowDisconnectMessage] = useState(false);
 const [disconnectedPlayer, setDisconnectedPlayer] = useState('');
+const [RoundWord, setRoundWord] = useState(null);
 
   useEffect(()=>{
     socket.emit('join-room', {roomID, name}); 
@@ -54,13 +55,16 @@ const [disconnectedPlayer, setDisconnectedPlayer] = useState('');
           setDrawer(socket.id===socketID);
           setdisableChat(socket.id===socketID);
           setCurrentDrawer(socketID);
+          setRoundWord(word);
           const spaced = word.split('').map(c => c === ' ' ? '  ' : c).join(' ');
           setdisplayWord(socket.id===socketID ? spaced : spaced.replace(/[A-Z]/gi, '_'));
         });
          socket.on('game-over', (points, id) => {
+            setShowModal(false);
             if (timerInterval.current) {
               clearInterval(timerInterval.current);
               timerInterval.current = null;
+              
             }
             if(id){
             setDisconnectedPlayer(players[id]);
@@ -141,7 +145,10 @@ const [disconnectedPlayer, setDisconnectedPlayer] = useState('');
     setResultsData(data);
     setPlayerPoints(data.points);
     setShowResults(true);
-    setTimeout(() => setShowResults(false), 4000);
+    setTimeout(() => {
+      setShowResults(false)
+      setRoundWord(null)
+    }, 4000);
   });
   
   socket.on('insufficient-members', ()=>{
@@ -304,7 +311,7 @@ const handleTouchEnd = (e) => {
         </div>
       </div>
 
-      <div className="absolute top-16 sm:top-20 right-2 sm:right-4 bg-white rounded-lg shadow-lg p-2 sm:p-4 z-30 w-48 sm:w-64 max-h-60 sm:max-h-80">
+      <div className="absolute top-24 sm:top-32 right-2 sm:right-4 bg-white rounded-lg shadow-lg p-2 sm:p-4 z-30 w-48 sm:w-64 max-h-60 sm:max-h-80">
         <h3 className="text-sm sm:text-lg font-semibold text-gray-800 mb-2 sm:mb-3 text-center border-b pb-1 sm:pb-2">
           Players ({Object.keys(players).length})
         </h3>
@@ -384,7 +391,12 @@ const handleTouchEnd = (e) => {
       {showResults && resultsData && (
         <div className="absolute top-16 sm:top-20 left-1/2 transform -translate-x-1/2 bg-white rounded-lg shadow-2xl p-4 sm:p-6 z-50 border-2 border-blue-200 mx-2 w-80 sm:w-auto max-w-md">
           <div className="text-center">
-            <h2 className="text-lg sm:text-2xl font-bold text-gray-800 mb-3 sm:mb-4">Round Results</h2>
+                  <h2 className="text-lg sm:text-2xl font-bold text-gray-800 mb-2 sm:mb-3">Round Results</h2>
+      {roundWord && (
+        <div className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4 bg-gray-100 px-3 py-2 rounded">
+          The word was: <span className="font-bold text-blue-600">{roundWord}</span>
+        </div>
+      )}
             <div className="space-y-1 sm:space-y-2">
               {Object.entries(resultsData.points)
                 .sort((a, b) => b[1] - a[1])
@@ -493,15 +505,17 @@ const handleTouchEnd = (e) => {
 
       <div className="pt-14 sm:pt-16">
         <Stage
-          width={window.innerWidth}
-          height={window.innerHeight - 56}
-          onMouseDown={handleMouseDown}
-          onMousemove={handleMouseMove}
-          onMouseup={handleMouseUp}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-        >
+        width={window.innerWidth}
+        height={window.innerHeight - (window.innerWidth < 640 ? 64 : 80)}
+        scaleX={1}
+        scaleY={1}
+        onMouseDown={handleMouseDown}
+        onMousemove={handleMouseMove}
+        onMouseup={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
           <Layer>
             {lines.map((line, i) => (
               <Line
