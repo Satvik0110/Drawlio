@@ -392,9 +392,9 @@ const handleTouchEnd = (e) => {
         <div className="absolute top-16 sm:top-20 left-1/2 transform -translate-x-1/2 bg-white rounded-lg shadow-2xl p-4 sm:p-6 z-50 border-2 border-blue-200 mx-2 w-80 sm:w-auto max-w-md">
           <div className="text-center">
                   <h2 className="text-lg sm:text-2xl font-bold text-gray-800 mb-2 sm:mb-3">Round Results</h2>
-      {roundWord && (
+      {RoundWord && (
         <div className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4 bg-gray-100 px-3 py-2 rounded">
-          The word was: <span className="font-bold text-blue-600">{roundWord}</span>
+          The word was: <span className="font-bold text-blue-600">{RoundWord}</span>
         </div>
       )}
             <div className="space-y-1 sm:space-y-2">
