@@ -4,7 +4,7 @@ Drawlio is a **real-time multiplayer game** built with full-stack web technologi
 
 ---
 
-##Features
+## Features
 
 - **Room Management**
   - Players can join rooms using a unique code
@@ -34,7 +34,7 @@ Drawlio is a **real-time multiplayer game** built with full-stack web technologi
 ---
 
 
-## 🔗 Deployment
+## Deployment
 
 You can try out the live app here:  
 👉 [Drawlio on Render](https://drawlio-zd6i.onrender.com/)  
